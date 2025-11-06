@@ -25,6 +25,7 @@ dependencies = [
     "pytest",
     "python-dotenv",
     "ruff",
+    "structlog>=25.5.0",
     "tqdm",
     "typer",
 ]
