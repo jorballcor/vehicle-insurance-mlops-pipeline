@@ -17,8 +17,11 @@ classifiers = [
 ]
 dependencies = [
     "awscli",
+    "kagglehub>=0.3.13",
     "loguru",
+    "pandas>=2.3.3",
     "pip",
+    "pymongo>=4.15.3",
     "pytest",
     "python-dotenv",
     "ruff",
