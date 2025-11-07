@@ -86,5 +86,3 @@ def get_logger(name: str | None = None):
     return structlog.get_logger(name)
 
 configure_logger()
-
-log = get_logger("vehicle-insurance-mlops-pipeline")
