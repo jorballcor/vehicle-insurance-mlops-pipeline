@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import Optional
 
-from src.configuration.mongo_db_connection import MongoDBClient
+from src.config.mongo_db_connection import MongoDBClient
 from src.config import settings
 from src.logger import log
 from src.exceptions import MyException
