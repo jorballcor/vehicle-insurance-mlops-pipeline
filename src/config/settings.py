@@ -27,11 +27,11 @@ class MongoSettings(BaseModel):
 
 
 class PathsSettings(BaseModel):
-    pipeline_name: str = ""                      # si no usas pipeline, déjalo vacío
+    pipeline_name: str = ""                      
     artifact_dir: Path = Path("artifact")
     schema_file_path: Path = Path("config") / "schema.yaml"
     model_file_name: str = "model.pkl"
-    preprocessing_object_file_name: str = "preprocessing.pkl"  # corregido el typo
+    preprocessing_object_file_name: str = "preprocessing.pkl" 
     file_name: str = "data.csv"
     train_file_name: str = "train.csv"
     test_file_name: str = "test.csv"
@@ -63,7 +63,7 @@ class AWSSettings(BaseSettings):
 
 
 class DataIngestionSettings(BaseModel):
-    collection_name: str = "Proj1-Data"
+    collection_name: str = "vehicle-insurance-data"
     dir_name: str = "data_ingestion"
     feature_store_dir: str = "feature_store"
     ingested_dir: str = "ingested"
