@@ -1,4 +1,3 @@
-import sys
 import pandas as pd
 import numpy as np
 from typing import Optional
@@ -24,7 +23,8 @@ class VehicleInsuranceRepository:
         try:
             self.mongo_client = MongoDBClient(database_name=DATABASE_NAME)
         except Exception as e:
-            raise MyException(e, sys)
+            ##TODO: create a custom exception class for Mongo Client errors
+            raise MyException(e)
 
     def export_collection_as_dataframe(self, collection_name: str, database_name: Optional[str] = None) -> pd.DataFrame:
         """
