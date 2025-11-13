@@ -7,23 +7,28 @@ from typing import Literal, Optional
 
 from pydantic import (
     BaseModel,
-    BaseSettings,
     Field,
     SecretStr,
     field_validator,
     computed_field,
     conint,
     confloat,
+    AliasChoices
 )
+
+from pydantic_settings import BaseSettings
 
 # -------------------------
 # Submodelos por dominio
 # -------------------------
 
 class MongoSettings(BaseModel):
+    url: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("MONGODB_URL", "MONGODB_CONNECTION_URL"),
+    )
     database_name: str = "Vehicle-Insurance"
     collection_name: str = "vehicle-insurance-data"
-    url_env_key: str = "MONGODB_CONNECTION_URL"
 
 
 class PathsSettings(BaseModel):
@@ -130,6 +135,38 @@ class AppSettings(BaseModel):
 # -------------------------
 
 class Settings(BaseSettings):
+    """
+    Central configuration management for the Vehicle Insurance MLOps Pipeline.
+    
+    This class defines all application settings, constants, and configuration parameters
+    using Pydantic for validation and type safety. It organizes settings by domain
+    and supports environment variable overrides with nested configuration support.
+    
+    Attributes:
+        target_column (str): The target variable for machine learning predictions.
+        mongo (MongoSettings): MongoDB connection and database configuration.
+        paths (PathsSettings): File system paths and directory structure.
+        aws (AWSSettings): AWS credentials and service configurations.
+        ingestion (DataIngestionSettings): Data ingestion pipeline parameters.
+        validation (DataValidationSettings): Data validation and quality checks.
+        transformation (DataTransformationSettings): Data preprocessing configuration.
+        trainer (ModelTrainerSettings): Model training hyperparameters and settings.
+        evaluation (ModelEvaluationSettings): Model evaluation and deployment criteria.
+        app (AppSettings): Web application host and port configuration.
+    
+    Computed Fields:
+        current_year (int): The current year, computed dynamically.
+    
+    Configuration:
+        Environment variables can override defaults using double underscore notation
+        (e.g., MONGO__DATABASE_NAME, TRAINER__N_ESTIMATORS).
+    
+    Example:
+        >>> from src.config.settings import settings
+        >>> db_name = settings.mongo.database_name
+        >>> model_hyperparams = settings.trainer.n_estimators
+    """
+    
     # Negocio/datos
     target_column: str = "Response"
 

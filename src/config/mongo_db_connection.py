@@ -2,10 +2,10 @@ import pymongo
 import certifi
 
 from src.logger import log
-from src.config import settings
+from src.config.settings import settings
 
-DATABASE_NAME = settings.MongoSettings.database_name
-MONGODB_URL_KEY = settings.MongoSettings.url_env_key
+DATABASE_NAME = settings.mongo.database_name
+MONGODB_URL_KEY = settings.mongo.url
 
 # Load the certificate authority file to avoid timeout errors when connecting to MongoDB
 ca = certifi.where()
@@ -46,12 +46,11 @@ class MongoDBClient:
         try:
             # Check if a MongoDB client connection has already been established; if not, create a new one
             if MongoDBClient.client is None:
-                mongo_db_url = MONGODB_URL_KEY 
-                if mongo_db_url is None:
-                    raise Exception(f"Environment variable '{mongo_db_url}' is not set.")
+                if MONGODB_URL_KEY is None:
+                    raise Exception(f"Environment variable '{MONGODB_URL_KEY}' is not set.")
                 
                 # Establish a new MongoDB client connection
-                MongoDBClient.client = pymongo.MongoClient(mongo_db_url, tlsCAFile=ca)
+                MongoDBClient.client = pymongo.MongoClient(MONGODB_URL_KEY, tlsCAFile=ca)
                 
             # Use the shared MongoClient for this instance
             self.client = MongoDBClient.client

@@ -3,12 +3,12 @@ import numpy as np
 from typing import Optional
 
 from src.config.mongo_db_connection import MongoDBClient
-from src.config import settings
+from src.config.settings import settings
 from src.logger import log
 from src.exceptions import MyException
 
 
-DATABASE_NAME = settings.MongoSettings.database_name
+DATABASE_NAME = settings.mongo.database_name
 
 
 class VehicleInsuranceRepository:
