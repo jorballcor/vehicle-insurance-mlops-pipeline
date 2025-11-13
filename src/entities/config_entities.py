@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.config.settings import settings
+from src.config.settings import Settings
 
 
 def new_timestamp() -> str:
@@ -45,6 +45,8 @@ def build_entities(ts: str | None = None) -> RunEntities:
     Materialize per-run ingestion configs from global settings.
     Mirrors the previous full structure but limited to training + ingestion.
     """
+    settings = Settings()
+    
     ts = ts or new_timestamp()
 
     artifact_root = settings.paths.artifact_dir / ts
