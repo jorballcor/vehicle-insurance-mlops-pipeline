@@ -16,7 +16,7 @@ from pydantic import (
     AliasChoices
 )
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # -------------------------
 # Submodelos por dominio
@@ -187,18 +187,18 @@ class Settings(BaseSettings):
     def current_year(self) -> int:
         return date.today().year
 
-    model_config = {
-        "env_nested_delimiter": "__",  # p.ej. TRAINER__N_ESTIMATORS=300
-        "extra": "ignore",
-        "frozen": True,  # inmutables como "constantes"
-    }
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter="__",
+        extra="ignore",
+        frozen=True,
+    )
 
 # ------------------------------------------
 # Uso recomendado en tu código de aplicación
 # ------------------------------------------
 
-# Crea una única instancia global y compártela
-settings = Settings()
 
 # Ejemplos de acceso:
 # settings.mongo.database_name
