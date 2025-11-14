@@ -50,3 +50,5 @@ extend-select = ["I"]  # Add import sorting
 known-first-party = ["MLOps"]
 force-sort-within-sections = true
 
+[project.scripts]
+train = "src.cli:run_training"
