@@ -1,14 +1,11 @@
 import pandas as pd
 import numpy as np
-from typing import Optional
+from typing import Optional, Iterable, Dict, Any
 
 from src.config.mongo_db_connection import MongoDBClient
-from src.config.settings import settings
+from src.config.settings import Settings
 from src.logger import log
 from src.exceptions import MyException
-
-
-DATABASE_NAME = settings.mongo.database_name
 
 
 class VehicleInsuranceRepository:
@@ -20,11 +17,15 @@ class VehicleInsuranceRepository:
         """
         Initializes the MongoDB client connection.
         """
+        settings = Settings()
+        database_name = settings.mongo.database_name
+        
         try:
-            self.mongo_client = MongoDBClient(database_name=DATABASE_NAME)
+            self.mongo_client = MongoDBClient(database_name=database_name)
+            
         except Exception as e:
-            ##TODO: create a custom exception class for Mongo Client errors
-            raise MyException(e)
+            log.error("Error initializing MongoDBClient: %s", e)
+            raise
 
     def export_collection_as_dataframe(self, collection_name: str, database_name: Optional[str] = None) -> pd.DataFrame:
         """
@@ -48,15 +49,25 @@ class VehicleInsuranceRepository:
                 collection = self.mongo_client.database[collection_name]
             else:
                 collection = self.mongo_client[database_name][collection_name]
+                
+            log.info("Fetching data from MongoDB collection='%s'", collection_name)
+            docs: Iterable[Dict[str, Any]] = list(collection.find())
+            log.info("Fetched %d documents from MongoDB", len(docs))
 
-            # Convert collection data to DataFrame and preprocess
-            print("Fetching data from mongoDB")
-            df = pd.DataFrame(list(collection.find()))
-            print(f"Data fecthed with len: {len(df)}")
-            if "id" in df.columns.to_list():
+            if not docs:
+                # Return empty DataFrame if no documents found, DataIngestion will handle this case
+                return pd.DataFrame()
+
+            df = pd.DataFrame(docs)
+            if "id" in df.columns:
                 df = df.drop(columns=["id"], axis=1)
-            df.replace({"na":np.nan},inplace=True)
+            df.replace({"na": np.nan}, inplace=True)
+
             return df
 
         except Exception as e:
             log.error(f"Error exporting collection '{collection_name}' as DataFrame: {e}")
+            # I raise the exception, so DataIngestion see the real error
+            raise
+        
+        

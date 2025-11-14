@@ -1,11 +1,11 @@
 import pymongo
 import certifi
 
-from src.logger import log
-from src.config.settings import settings
+from typing import Optional
 
-DATABASE_NAME = settings.mongo.database_name
-MONGODB_URL_KEY = settings.mongo.url
+from src.logger import log
+from src.config.settings import Settings
+
 
 # Load the certificate authority file to avoid timeout errors when connecting to MongoDB
 ca = certifi.where()
@@ -29,7 +29,7 @@ class MongoDBClient:
 
     client = None  # Shared MongoClient instance across all MongoDBClient instances
 
-    def __init__(self, database_name: str = DATABASE_NAME) -> None:
+    def __init__(self, database_name: Optional[str] = None) -> None:
         """
         Initializes a connection to the MongoDB database. If no existing connection is found, it establishes a new one.
 
@@ -40,23 +40,34 @@ class MongoDBClient:
 
         Raises:
         ------
-        MyException
+        Exception
             If there is an issue connecting to MongoDB or if the environment variable for the MongoDB URL is not set.
         """
+    
+        settings = Settings()
+        
+        # Check if a MongoDB client connection has already been established; if not, create a new one
+        mongo_url = settings.mongo.url.get_secret_value() if settings.mongo.url else None
+        if not mongo_url:
+            msg = (
+                "Mongo URL not configured. "
+                "Set MONGODB_CONNECTION_URL in your environment."
+            )
+            log.error(msg)
+            raise Exception(msg)
+                
+        db_name = database_name or settings.mongo.database_name
+
         try:
-            # Check if a MongoDB client connection has already been established; if not, create a new one
             if MongoDBClient.client is None:
-                if MONGODB_URL_KEY is None:
-                    raise Exception(f"Environment variable '{MONGODB_URL_KEY}' is not set.")
-                
-                # Establish a new MongoDB client connection
-                MongoDBClient.client = pymongo.MongoClient(MONGODB_URL_KEY, tlsCAFile=ca)
-                
-            # Use the shared MongoClient for this instance
+                log.info("Creating new MongoClient to %s", mongo_url)
+                MongoDBClient.client = pymongo.MongoClient(mongo_url, tlsCAFile=ca)
+
             self.client = MongoDBClient.client
-            self.database = self.client[database_name]  # Connect to the specified database
-            self.database_name = database_name
-            log.info("MongoDB connection successful.")
+            self.database = self.client[db_name]
+            self.database_name = db_name
+
+            log.info("MongoDB connection successful. database=%s", db_name)
             
         except Exception as e:
             log.error(f"Error connecting to MongoDB: {e}")
