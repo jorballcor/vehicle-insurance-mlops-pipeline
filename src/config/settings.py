@@ -27,7 +27,7 @@ class MongoSettings(BaseModel):
         default=None,
         validation_alias=AliasChoices("MONGODB_URL", "MONGODB_CONNECTION_URL"),
     )
-    database_name: str = "Vehicle-Insurance"
+    database_name: str = "vehicle-insurance"
     collection_name: str = "vehicle-insurance-data"
 
 
