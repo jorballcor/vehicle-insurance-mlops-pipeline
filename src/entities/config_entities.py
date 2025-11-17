@@ -34,10 +34,17 @@ class DataIngestionConfig:
 
 
 @dataclass(frozen=True)
+class DataValidationConfig:
+    data_validation_dir: Path
+    validation_report_file_path: Path
+    
+
+@dataclass(frozen=True)
 class RunEntities:
     timestamp: str
     training: TrainingPipelineConfig
     ingestion: DataIngestionConfig
+    validation: DataValidationConfig
 
 
 def build_entities(ts: str | None = None) -> RunEntities:
@@ -72,9 +79,16 @@ def build_entities(ts: str | None = None) -> RunEntities:
         mongo_database=settings.mongo.database_name,
         collection_name=settings.ingestion.collection_name or settings.mongo.collection_name,
     )
+    
+    validation_root = artifact_root / settings.validation.dir_name
+    validation = DataValidationConfig(
+        data_validation_dir=validation_root,
+        validation_report_file_path=validation_root / settings.validation.report_file_name,
+    )
 
     return RunEntities(
         timestamp=ts,
         training=training,
         ingestion=ingestion,
+        validation=validation,
     )

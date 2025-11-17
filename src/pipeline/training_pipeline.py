@@ -9,19 +9,20 @@ from src.entities.config_entities import (
     RunEntities,
     TrainingPipelineConfig,
     DataIngestionConfig,
+    DataValidationConfig
 )
-from src.entities.artifact_entity import DataIngestionArtifact
+from src.entities.artifact_entity import DataIngestionArtifact, DataValidationArtifact
 from src.components.data_ingestion import DataIngestion
+from src.components.data_validation import DataValidation
 
 
 class TrainPipeline:
     """
     Orchestrates the training pipeline.
-    Currently ONLY launches the Data Ingestion stage,
     using:
       - Settings (Pydantic) -> build_entities()
-      - Run-specific configs (TrainingPipelineConfig, DataIngestionConfig)
-      - Pydantic Artifacts (DataIngestionArtifact)
+      - Run-specific configs (TrainingPipelineConfig, DataIngestionConfig, DataValidationConfig)
+      - Pydantic Artifacts (DataIngestionArtifact, DataValidationArtifact)
     """
 
     def __init__(self, entities: Optional[RunEntities] = None) -> None:
@@ -31,6 +32,8 @@ class TrainPipeline:
         # Shortcuts to the configs we're interested in now
         self.training_cfg: TrainingPipelineConfig = self.entities.training
         self.ingestion_cfg: DataIngestionConfig = self.entities.ingestion
+        self.validation_cfg: DataValidationConfig = self.entities.validation
+        
 
         log.info(
             "TrainPipeline initialized | timestamp=%s | artifact_dir=%s",
@@ -74,8 +77,43 @@ class TrainPipeline:
             log.error("Error during Data Ingestion in TrainPipeline: %s", exc)
             raise
 
+    
     # ---------------------------
-    # Orchestration (for now: only ingestion)
+    # Stage 2: Data Validation
+    # ---------------------------   
+    def start_data_validation(
+        self,
+        data_ingestion_artifact: DataIngestionArtifact,
+    ) -> DataValidationArtifact:
+        """
+        Lanza el componente de Data Validation.
+        """
+        log.info("Starting start_data_validation in TrainPipeline")
+
+        try:
+            data_validation = DataValidation(
+                data_ingestion_artifact=data_ingestion_artifact,
+                data_validation_config=self.validation_cfg,  # <- viene de tus RunEntities
+            )
+
+            data_validation_artifact = data_validation.initiate_data_validation()
+
+            log.info(
+                "Data validation completed | status=%s | report=%s",
+                data_validation_artifact.validation_status,
+                data_validation_artifact.validation_report_file_path,
+            )
+            log.info("Finished start_data_validation in TrainPipeline")
+
+            return data_validation_artifact
+
+        except Exception as exc:
+            log.error("Error during Data Validation in TrainPipeline: %s", exc)
+            raise
+
+
+    # ---------------------------
+    # Orchestration (for now: only ingestion & validation)
     # ---------------------------
     def run_pipeline(self) -> None:
         """
@@ -87,16 +125,19 @@ class TrainPipeline:
         try:
             ingestion_artifact = self.start_data_ingestion()
 
-            # Here you could, for example, log the complete artifact if you want:
             log.info(
                 "Ingestion artifact generated: train=%s | test=%s",
                 str(ingestion_artifact.trained_file_path),
                 str(ingestion_artifact.test_file_path),
             )
+            
+            data_validation_artifact = self.start_data_validation(data_ingestion_artifact=ingestion_artifact)
+            log.info("Completed data validation: %s", str(data_validation_artifact))
+            
 
             log.info("=== End of run_pipeline (ingestion only) ===")
 
         except Exception as exc:
-            log.error("Failure in run_pipeline (ingestion): %s", exc)
+            log.error("Failure in run_pipeline: %s", exc)
             # re-raise the exception so the CLI/API/whatever is aware
             raise

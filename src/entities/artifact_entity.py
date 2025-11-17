@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, constr
 
 
 # ----------------------------
@@ -29,3 +29,10 @@ class DataIngestionArtifact(Artifact):
     trained_file_path: Path = Field(..., description="Path to the training split CSV file")
     test_file_path: Path = Field(..., description="Path to the testing split CSV file")
 
+# ----------------------------
+# Data Validation
+# ----------------------------
+class DataValidationArtifact(Artifact):
+    validation_status: bool
+    message: constr(strip_whitespace=True, min_length=1)
+    validation_report_file_path: Path
