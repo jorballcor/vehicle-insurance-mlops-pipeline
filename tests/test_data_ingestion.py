@@ -2,6 +2,7 @@
 from pathlib import Path
 import pandas as pd
 
+from src.config.settings import get_settings
 from src.entities.config_entities import build_entities
 from src.components.data_ingestion import DataIngestion
 from tests.conftest import FakeRepo
@@ -10,6 +11,8 @@ from tests.conftest import FakeRepo
 def test_data_ingestion_happy_path(tmp_path, monkeypatch, small_df):
     # Set artifact dir to tmp for isolation
     monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
+    
+    get_settings.cache_clear()
 
     # Deterministic timestamp to make assertions easy
     ents = build_entities(ts="20990101_010203")
@@ -40,6 +43,9 @@ def test_data_ingestion_happy_path(tmp_path, monkeypatch, small_df):
 
 def test_deterministic_split(tmp_path, monkeypatch, small_df):
     monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
+    
+    get_settings.cache_clear()
+    
     ents = build_entities(ts="20990101_010203")
 
     # Run ingestion twice with same seed to ensure identical splits

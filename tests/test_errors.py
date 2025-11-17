@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 
+from src.config.settings import get_settings
 from src.entities.config_entities import build_entities
 from src.components.data_ingestion import DataIngestion
 from tests.conftest import FakeRepo
@@ -8,6 +9,10 @@ from tests.conftest import FakeRepo
 
 def test_empty_export_raises(tmp_path, monkeypatch):
     monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
+    
+    get_settings.cache_clear()
+    
+    
     ents = build_entities(ts="20990101_010203")
 
     empty_df = pd.DataFrame()

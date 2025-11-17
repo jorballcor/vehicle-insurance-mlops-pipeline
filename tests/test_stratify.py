@@ -2,6 +2,7 @@
 import pandas as pd
 from src.entities.config_entities import build_entities
 from src.components.data_ingestion import DataIngestion
+from src.config.settings import get_settings
 from tests.conftest import FakeRepo
 
 def _class_ratio(series):
@@ -10,6 +11,8 @@ def _class_ratio(series):
 
 def test_stratified_split_preserves_ratio(tmp_path, monkeypatch, imbalanced_df):
     monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
+    
+    get_settings.cache_clear()
 
     ents = build_entities(ts="20990101_010203")
 

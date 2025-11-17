@@ -1,11 +1,14 @@
 # tests/test_entities.py
 from pathlib import Path
+from src.config.settings import get_settings
 from src.entities.config_entities import build_entities
 
 def test_build_entities_paths(tmp_path, monkeypatch):
     # Force artifact root to tmp dir, and deterministic timestamp
     monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
     ts = "20990101_010203"
+    
+    get_settings.cache_clear()
 
     ents = build_entities(ts=ts)
 
