@@ -1,0 +1,171 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/jorballcor/Aplica/vehicle-insurance-mlops-pipeline/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/jorballcor/Aplica/vehicle-insurance-mlops-pipeline
+configfile: pytest.ini
+collecting ... collected 3 items
+
+tests/integration/test_training_pipeline_validaton.py::test_pipeline_runs_validation_after_ingestion FAILED [ 33%]
+tests/integration/test_training_pipeline_validaton.py::test_validation_fails_with_invalid_data PASSED [ 66%]
+tests/integration/test_training_pipeline_validaton.py::test_validation_in_pipeline_context FAILED [100%]
+
+=================================== FAILURES ===================================
+________________ test_pipeline_runs_validation_after_ingestion _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_pipeline_runs_validation_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x726e0d027bf0>
+small_df =    feature_a  feature_b  Response
+0          1         10         0
+1          2         20         0
+2          3         30         0
+3          4         40         1
+4          5         50         1
+5          6         60         1
+
+    def test_pipeline_runs_validation_after_ingestion(tmp_path, monkeypatch, small_df):
+        """Test that validation runs correctly after data ingestion in the pipeline"""
+        # Setup environment
+        monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
+        get_settings.cache_clear()
+    
+        # Build pipeline entities
+        ents = build_entities(ts="20990101_010203")
+        pipeline = TrainPipeline(entities=ents)
+    
+        # Create a simple data ingestion artifact (simulating previous step)
+        ingestion_dir = ents.ingestion.data_ingestion_dir / ents.ingestion.data_ingestion_dir
+        ingestion_dir.mkdir(parents=True, exist_ok=True)
+    
+        train_file = ingestion_dir / "train.csv"
+        test_file = ingestion_dir / "test.csv"
+    
+        # Split small_df into train/test
+        train_data = small_df.iloc[:4]  # First 4 rows for training
+        test_data = small_df.iloc[4:]   # Last 2 rows for testing
+    
+        train_data.to_csv(train_file, index=False)
+        test_data.to_csv(test_file, index=False)
+    
+        # Create ingestion artifact
+        ingestion_artifact = DataIngestionArtifact(
+            trained_file_path=train_file,
+            test_file_path=test_file
+        )
+    
+        # Test data validation component
+        validator = DataValidation(
+            data_ingestion_artifact=ingestion_artifact,
+            data_validation_config=ents.validation
+        )
+    
+        # Execute validation
+        validation_artifact = validator.initiate_data_validation()
+    
+        # Assertions
+>       assert validation_artifact.validation_status is True
+E       AssertionError: assert False is True
+E        +  where False = DataValidationArtifact(validation_status=False, message='Columns are missing or count mismatch in training dataframe. Columns are missing or count mismatch in test dataframe. Required numerical/categorical columns are missing in training dataframe. Required numerical/categorical columns are missing in test dataframe.', validation_report_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_pipeline_runs_validation_0/artifact/20990101_010203/data_validation/report.yaml')).validation_status
+
+tests/integration/test_training_pipeline_validaton.py:51: AssertionError
+----------------------------- Captured stderr call -----------------------------
+[2m2025-11-17T18:44:02.158010Z[0m [[32m[1minfo     [0m] [1mTrainPipeline initialized | timestamp=%s | artifact_dir=%s[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m('20990101_010203', '/tmp/pytest-of-jorballcor/pytest-11/test_pipeline_runs_validation_0/artifact/20990101_010203')[0m
+[2m2025-11-17T18:44:02.161590Z[0m [[32m[1minfo     [0m] [1mStarting data validation      [0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m
+[2m2025-11-17T18:44:02.163581Z[0m [[32m[1minfo     [0m] [1mIs required column count correct: [%s][0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(False,)[0m
+[2m2025-11-17T18:44:02.163804Z[0m [[32m[1minfo     [0m] [1mIs required column count correct: [%s][0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(False,)[0m
+[2m2025-11-17T18:44:02.164183Z[0m [[32m[1minfo     [0m] [1mMissing numerical columns: %s [0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(['Age', 'Driving_License', 'Region_Code', 'Previously_Insured', 'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'],)[0m
+[2m2025-11-17T18:44:02.164363Z[0m [[32m[1minfo     [0m] [1mMissing categorical columns: %s[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(['Gender', 'Vehicle_Age', 'Vehicle_Damage'],)[0m
+[2m2025-11-17T18:44:02.164723Z[0m [[32m[1minfo     [0m] [1mMissing numerical columns: %s [0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(['Age', 'Driving_License', 'Region_Code', 'Previously_Insured', 'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'],)[0m
+[2m2025-11-17T18:44:02.164967Z[0m [[32m[1minfo     [0m] [1mMissing categorical columns: %s[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(['Gender', 'Vehicle_Age', 'Vehicle_Damage'],)[0m
+[2m2025-11-17T18:44:02.165332Z[0m [[32m[1minfo     [0m] [1mData validation artifact created and saved to JSON file.[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m
+[2m2025-11-17T18:44:02.165496Z[0m [[32m[1minfo     [0m] [1mData validation artifact: %s  [0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(DataValidationArtifact(validation_status=False, message='Columns are missing or count mismatch in training dataframe. Columns are missing or count mismatch in test dataframe. Required numerical/categorical columns are missing in training dataframe. Required numerical/categorical columns are missing in test dataframe.', validation_report_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_pipeline_runs_validation_0/artifact/20990101_010203/data_validation/report.yaml')),)[0m
+------------------------------ Captured log call -------------------------------
+INFO     vehicle-insurance-mlops-pipeline:training_pipeline.py:38 {'positional_args': ('20990101_010203', '/tmp/pytest-of-jorballcor/pytest-11/test_pipeline_runs_validation_0/artifact/20990101_010203'), 'event': 'TrainPipeline initialized | timestamp=%s | artifact_dir=%s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:129 {'event': 'Starting data validation', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:56 {'positional_args': (False,), 'event': 'Is required column count correct: [%s]', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:56 {'positional_args': (False,), 'event': 'Is required column count correct: [%s]', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:84 {'positional_args': (['Age', 'Driving_License', 'Region_Code', 'Previously_Insured', 'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'],), 'event': 'Missing numerical columns: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:91 {'positional_args': (['Gender', 'Vehicle_Age', 'Vehicle_Damage'],), 'event': 'Missing categorical columns: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:84 {'positional_args': (['Age', 'Driving_License', 'Region_Code', 'Previously_Insured', 'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'],), 'event': 'Missing numerical columns: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:91 {'positional_args': (['Gender', 'Vehicle_Age', 'Vehicle_Damage'],), 'event': 'Missing categorical columns: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:207 {'event': 'Data validation artifact created and saved to JSON file.', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:208 {'positional_args': (DataValidationArtifact(validation_status=False, message='Columns are missing or count mismatch in training dataframe. Columns are missing or count mismatch in test dataframe. Required numerical/categorical columns are missing in training dataframe. Required numerical/categorical columns are missing in test dataframe.', validation_report_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_pipeline_runs_validation_0/artifact/20990101_010203/data_validation/report.yaml')),), 'event': 'Data validation artifact: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+_____________________ test_validation_in_pipeline_context ______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_validation_in_pipeline_co0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x726ddfc0fa40>
+small_df =    feature_a  feature_b  Response
+0          1         10         0
+1          2         20         0
+2          3         30         0
+3          4         40         1
+4          5         50         1
+5          6         60         1
+
+    def test_validation_in_pipeline_context(tmp_path, monkeypatch, small_df):
+        """Test validation as part of the complete pipeline context"""
+        monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
+        get_settings.cache_clear()
+    
+        ents = build_entities(ts="20990101_010203")
+        pipeline = TrainPipeline(entities=ents)
+    
+        # Simulate pipeline running data ingestion and validation
+        ingestion_dir = ents.ingestion.data_ingestion_dir / ents.ingestion.data_ingestion_dir
+        ingestion_dir.mkdir(parents=True, exist_ok=True)
+    
+        train_file = ingestion_dir / "train.csv"
+        test_file = ingestion_dir / "test.csv"
+    
+        # Use the small_df fixture which should match your schema
+        train_data = small_df.iloc[:4]
+        test_data = small_df.iloc[4:]
+    
+        train_data.to_csv(train_file, index=False)
+        test_data.to_csv(test_file, index=False)
+    
+        ingestion_artifact = DataIngestionArtifact(
+            trained_file_path=train_file,
+            test_file_path=test_file
+        )
+    
+        # This is what the pipeline would call internally
+        validation_artifact = pipeline.start_data_validation(ingestion_artifact)
+    
+        # Verify the validation completed successfully
+>       assert validation_artifact.validation_status is True
+E       AssertionError: assert False is True
+E        +  where False = DataValidationArtifact(validation_status=False, message='Columns are missing or count mismatch in training dataframe. Columns are missing or count mismatch in test dataframe. Required numerical/categorical columns are missing in training dataframe. Required numerical/categorical columns are missing in test dataframe.', validation_report_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_validation_in_pipeline_co0/artifact/20990101_010203/data_validation/report.yaml')).validation_status
+
+tests/integration/test_training_pipeline_validaton.py:127: AssertionError
+----------------------------- Captured stderr call -----------------------------
+[2m2025-11-17T18:44:02.264985Z[0m [[32m[1minfo     [0m] [1mTrainPipeline initialized | timestamp=%s | artifact_dir=%s[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m('20990101_010203', '/tmp/pytest-of-jorballcor/pytest-11/test_validation_in_pipeline_co0/artifact/20990101_010203')[0m
+[2m2025-11-17T18:44:02.265906Z[0m [[32m[1minfo     [0m] [1mStarting start_data_validation in TrainPipeline[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m
+[2m2025-11-17T18:44:02.267888Z[0m [[32m[1minfo     [0m] [1mStarting data validation      [0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m
+[2m2025-11-17T18:44:02.269396Z[0m [[32m[1minfo     [0m] [1mIs required column count correct: [%s][0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(False,)[0m
+[2m2025-11-17T18:44:02.269581Z[0m [[32m[1minfo     [0m] [1mIs required column count correct: [%s][0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(False,)[0m
+[2m2025-11-17T18:44:02.269774Z[0m [[32m[1minfo     [0m] [1mMissing numerical columns: %s [0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(['Age', 'Driving_License', 'Region_Code', 'Previously_Insured', 'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'],)[0m
+[2m2025-11-17T18:44:02.269948Z[0m [[32m[1minfo     [0m] [1mMissing categorical columns: %s[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(['Gender', 'Vehicle_Age', 'Vehicle_Damage'],)[0m
+[2m2025-11-17T18:44:02.270236Z[0m [[32m[1minfo     [0m] [1mMissing numerical columns: %s [0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(['Age', 'Driving_License', 'Region_Code', 'Previously_Insured', 'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'],)[0m
+[2m2025-11-17T18:44:02.270408Z[0m [[32m[1minfo     [0m] [1mMissing categorical columns: %s[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(['Gender', 'Vehicle_Age', 'Vehicle_Damage'],)[0m
+[2m2025-11-17T18:44:02.270892Z[0m [[32m[1minfo     [0m] [1mData validation artifact created and saved to JSON file.[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m
+[2m2025-11-17T18:44:02.271141Z[0m [[32m[1minfo     [0m] [1mData validation artifact: %s  [0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(DataValidationArtifact(validation_status=False, message='Columns are missing or count mismatch in training dataframe. Columns are missing or count mismatch in test dataframe. Required numerical/categorical columns are missing in training dataframe. Required numerical/categorical columns are missing in test dataframe.', validation_report_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_validation_in_pipeline_co0/artifact/20990101_010203/data_validation/report.yaml')),)[0m
+[2m2025-11-17T18:44:02.271505Z[0m [[32m[1minfo     [0m] [1mData validation completed | status=%s | report=%s[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m [36mpositional_args[0m=[35m(False, PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_validation_in_pipeline_co0/artifact/20990101_010203/data_validation/report.yaml'))[0m
+[2m2025-11-17T18:44:02.271799Z[0m [[32m[1minfo     [0m] [1mFinished start_data_validation in TrainPipeline[0m [[0m[1m[34mvehicle-insurance-mlops-pipeline[0m][0m
+------------------------------ Captured log call -------------------------------
+INFO     vehicle-insurance-mlops-pipeline:training_pipeline.py:38 {'positional_args': ('20990101_010203', '/tmp/pytest-of-jorballcor/pytest-11/test_validation_in_pipeline_co0/artifact/20990101_010203'), 'event': 'TrainPipeline initialized | timestamp=%s | artifact_dir=%s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:training_pipeline.py:91 {'event': 'Starting start_data_validation in TrainPipeline', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:129 {'event': 'Starting data validation', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:56 {'positional_args': (False,), 'event': 'Is required column count correct: [%s]', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:56 {'positional_args': (False,), 'event': 'Is required column count correct: [%s]', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:84 {'positional_args': (['Age', 'Driving_License', 'Region_Code', 'Previously_Insured', 'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'],), 'event': 'Missing numerical columns: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:91 {'positional_args': (['Gender', 'Vehicle_Age', 'Vehicle_Damage'],), 'event': 'Missing categorical columns: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:84 {'positional_args': (['Age', 'Driving_License', 'Region_Code', 'Previously_Insured', 'Annual_Premium', 'Policy_Sales_Channel', 'Vintage'],), 'event': 'Missing numerical columns: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:91 {'positional_args': (['Gender', 'Vehicle_Age', 'Vehicle_Damage'],), 'event': 'Missing categorical columns: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:207 {'event': 'Data validation artifact created and saved to JSON file.', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:data_validation.py:208 {'positional_args': (DataValidationArtifact(validation_status=False, message='Columns are missing or count mismatch in training dataframe. Columns are missing or count mismatch in test dataframe. Required numerical/categorical columns are missing in training dataframe. Required numerical/categorical columns are missing in test dataframe.', validation_report_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_validation_in_pipeline_co0/artifact/20990101_010203/data_validation/report.yaml')),), 'event': 'Data validation artifact: %s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:training_pipeline.py:101 {'positional_args': (False, PosixPath('/tmp/pytest-of-jorballcor/pytest-11/test_validation_in_pipeline_co0/artifact/20990101_010203/data_validation/report.yaml')), 'event': 'Data validation completed | status=%s | report=%s', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+INFO     vehicle-insurance-mlops-pipeline:training_pipeline.py:106 {'event': 'Finished start_data_validation in TrainPipeline', 'level': 'info', 'logger': 'vehicle-insurance-mlops-pipeline'}
+=========================== short test summary info ============================
+FAILED tests/integration/test_training_pipeline_validaton.py::test_pipeline_runs_validation_after_ingestion
+FAILED tests/integration/test_training_pipeline_validaton.py::test_validation_in_pipeline_context
+========================= 2 failed, 1 passed in 0.78s ==========================

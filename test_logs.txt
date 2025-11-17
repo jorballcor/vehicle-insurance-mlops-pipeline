@@ -1,0 +1,620 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/jorballcor/Aplica/vehicle-insurance-mlops-pipeline/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/jorballcor/Aplica/vehicle-insurance-mlops-pipeline
+configfile: pytest.ini
+collecting ... collected 16 items
+
+tests/test_data_validation.py::TestDataValidation::test_init_success ERROR [  6%]
+tests/test_data_validation.py::TestDataValidation::test_validate_number_of_columns_correct ERROR [ 12%]
+tests/test_data_validation.py::TestDataValidation::test_validate_number_of_columns_incorrect ERROR [ 18%]
+tests/test_data_validation.py::TestDataValidation::test_is_column_exist_all_present ERROR [ 25%]
+tests/test_data_validation.py::TestDataValidation::test_is_column_exist_missing_columns ERROR [ 31%]
+tests/test_data_validation.py::TestDataValidation::test_read_data_success PASSED [ 37%]
+tests/test_data_validation.py::TestDataValidation::test_read_data_file_not_found PASSED [ 43%]
+tests/test_data_validation.py::TestDataValidation::test_initiate_data_validation_success ERROR [ 50%]
+tests/test_data_validation.py::TestDataValidation::test_initiate_data_validation_failure FAILED [ 56%]
+tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns0-False] ERROR [ 62%]
+tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns1-False] ERROR [ 68%]
+tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns2-False] ERROR [ 75%]
+tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns3-False] ERROR [ 81%]
+tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns4-True] ERROR [ 87%]
+tests/test_data_validation.py::TestDataValidation::test_large_dataframe_validation ERROR [ 93%]
+tests/test_data_validation.py::TestDataValidation::test_validation_report_content ERROR [100%]
+
+==================================== ERRORS ====================================
+____________ ERROR at setup of TestDataValidation.test_init_success ____________
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_init_success0/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_init_success0/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_init_success0/data_validat...rt_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_init_success0/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_ ERROR at setup of TestDataValidation.test_validate_number_of_columns_correct _
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validate_number_of_column0/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validate_number_of_column0/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validate_number_of_column0...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validate_number_of_column0/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_ ERROR at setup of TestDataValidation.test_validate_number_of_columns_incorrect _
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validate_number_of_column1/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validate_number_of_column1/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validate_number_of_column1...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validate_number_of_column1/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+____ ERROR at setup of TestDataValidation.test_is_column_exist_all_present _____
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_is_column_exist_all_prese0/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_is_column_exist_all_prese0/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_is_column_exist_all_prese0...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_is_column_exist_all_prese0/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+__ ERROR at setup of TestDataValidation.test_is_column_exist_missing_columns ___
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_is_column_exist_missing_c0/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_is_column_exist_missing_c0/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_is_column_exist_missing_c0...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_is_column_exist_missing_c0/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+__ ERROR at setup of TestDataValidation.test_initiate_data_validation_success __
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_initiate_data_validation_0/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_initiate_data_validation_0/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_initiate_data_validation_0...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_initiate_data_validation_0/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_ ERROR at setup of TestDataValidation.test_column_existence_various_scenarios[missing_columns0-False] _
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_0/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_0/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_0...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_0/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_ ERROR at setup of TestDataValidation.test_column_existence_various_scenarios[missing_columns1-False] _
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_1/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_1/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_1...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_1/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_ ERROR at setup of TestDataValidation.test_column_existence_various_scenarios[missing_columns2-False] _
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_2/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_2/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_2...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_2/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_ ERROR at setup of TestDataValidation.test_column_existence_various_scenarios[missing_columns3-False] _
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_3/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_3/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_3...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_3/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_ ERROR at setup of TestDataValidation.test_column_existence_various_scenarios[missing_columns4-True] _
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_4/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_4/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_4...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_column_existence_various_4/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_____ ERROR at setup of TestDataValidation.test_large_dataframe_validation _____
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_large_dataframe_validatio0/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_large_dataframe_validatio0/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_large_dataframe_validatio0...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_large_dataframe_validatio0/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+_____ ERROR at setup of TestDataValidation.test_validation_report_content ______
+
+name = 'src.data_validation'
+
+    def resolve(name: str) -> object:
+        # Simplified from zope.dottedname.
+        parts = name.split(".")
+    
+        used = parts.pop(0)
+        found: object = __import__(used)
+        for part in parts:
+            used += "." + part
+            try:
+                found = getattr(found, part)
+            except AttributeError:
+                pass
+            else:
+                continue
+            # We use explicit un-nesting of the handling block in order
+            # to avoid nested exceptions.
+            try:
+>               __import__(used)
+E               ModuleNotFoundError: No module named 'src.data_validation'
+
+.venv/lib/python3.12/site-packages/_pytest/monkeypatch.py:77: ModuleNotFoundError
+
+The above exception was the direct cause of the following exception:
+
+mock_data_ingestion_artifact = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validation_report_content0/train.csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validation_report_content0/test.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validation_report_content0...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_validation_report_content0/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.fixture
+    def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
+        """Fixture providing complete setup for DataValidation tests"""
+        with pytest.MonkeyPatch().context() as m:
+            # Mock get_settings
+            mock_settings = Mock()
+            mock_settings.paths.schema_file_path = Path("test_schema.yaml")
+>           m.setattr('src.data_validation.get_settings', lambda: mock_settings)
+E           ImportError: import error in src.data_validation: No module named 'src.data_validation'
+
+tests/conftest.py:173: ImportError
+=================================== FAILURES ===================================
+___________ TestDataValidation.test_initiate_data_validation_failure ___________
+
+self = <test_data_validation.TestDataValidation object at 0x7e575a341460>
+mock_data_ingestion_artifact_invalid = DataIngestionArtifact(trained_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_initiate_data_validation_1/...csv'), test_file_path=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_initiate_data_validation_1/test_invalid.csv'))
+mock_data_validation_config = DataValidationConfig(data_validation_dir=PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_initiate_data_validation_1...PosixPath('/tmp/pytest-of-jorballcor/pytest-3/test_initiate_data_validation_1/data_validation/validation_report.yaml'))
+validation_schema_config = {'categorical_columns': ['col3', 'Response'], 'columns': {'Response': 'int', 'col1': 'int', 'col2': 'float', 'col3': 'string'}, 'numerical_columns': ['col1', 'col2']}
+
+    @pytest.mark.validation
+    def test_initiate_data_validation_failure(self, mock_data_ingestion_artifact_invalid,
+                                           mock_data_validation_config, validation_schema_config):
+        """Test data validation failure with invalid data"""
+        with patch('src.components.data_validation.get_settings') as mock_settings, \
+             patch('src.components.data_validation.read_yaml_file') as mock_read_yaml:
+    
+>           mock_settings_instance = Mock()
+                                     ^^^^
+E           NameError: name 'Mock' is not defined
+
+tests/test_data_validation.py:84: NameError
+=========================== short test summary info ============================
+FAILED tests/test_data_validation.py::TestDataValidation::test_initiate_data_validation_failure
+ERROR tests/test_data_validation.py::TestDataValidation::test_init_success - ...
+ERROR tests/test_data_validation.py::TestDataValidation::test_validate_number_of_columns_correct
+ERROR tests/test_data_validation.py::TestDataValidation::test_validate_number_of_columns_incorrect
+ERROR tests/test_data_validation.py::TestDataValidation::test_is_column_exist_all_present
+ERROR tests/test_data_validation.py::TestDataValidation::test_is_column_exist_missing_columns
+ERROR tests/test_data_validation.py::TestDataValidation::test_initiate_data_validation_success
+ERROR tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns0-False]
+ERROR tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns1-False]
+ERROR tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns2-False]
+ERROR tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns3-False]
+ERROR tests/test_data_validation.py::TestDataValidation::test_column_existence_various_scenarios[missing_columns4-True]
+ERROR tests/test_data_validation.py::TestDataValidation::test_large_dataframe_validation
+ERROR tests/test_data_validation.py::TestDataValidation::test_validation_report_content
+==================== 1 failed, 2 passed, 13 errors in 0.44s ====================
