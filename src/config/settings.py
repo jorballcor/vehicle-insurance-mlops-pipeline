@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -195,13 +196,10 @@ class Settings(BaseSettings):
         frozen=True,
     )
 
-# ------------------------------------------
-# Uso recomendado en tu código de aplicación
-# ------------------------------------------
-
-
-# Ejemplos de acceso:
-# settings.mongo.database_name
-# settings.paths.artifact_dir
-# settings.trainer.n_estimators
-# settings.current_year
+@lru_cache
+def get_settings() -> Settings:
+    """
+    Returns a cached instance of the Settings class.
+    Even though it is called multiple times, the same instance is returned for efficiency.
+    """
+    return Settings()

@@ -3,7 +3,7 @@ import numpy as np
 from typing import Optional, Iterable, Dict, Any
 
 from src.config.mongo_db_connection import MongoDBClient
-from src.config.settings import Settings
+from src.config.settings import get_settings
 from src.logger import log
 from src.exceptions import MyException
 
@@ -17,7 +17,7 @@ class VehicleInsuranceRepository:
         """
         Initializes the MongoDB client connection.
         """
-        settings = Settings()
+        settings = get_settings()
         database_name = settings.mongo.database_name
         
         try:

@@ -4,7 +4,7 @@ import certifi
 from typing import Optional
 
 from src.logger import log
-from src.config.settings import Settings
+from src.config.settings import get_settings
 
 
 # Load the certificate authority file to avoid timeout errors when connecting to MongoDB
@@ -44,7 +44,7 @@ class MongoDBClient:
             If there is an issue connecting to MongoDB or if the environment variable for the MongoDB URL is not set.
         """
     
-        settings = Settings()
+        settings = get_settings()
         
         # Check if a MongoDB client connection has already been established; if not, create a new one
         mongo_url = settings.mongo.url.get_secret_value() if settings.mongo.url else None
