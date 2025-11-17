@@ -1,6 +1,9 @@
 data
 models
 artifact
+test_logs.txt
+tests_logs.txt
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
