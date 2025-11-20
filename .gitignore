@@ -3,6 +3,7 @@ models
 artifact
 test_logs.txt
 tests_logs.txt
+logs_tests.txt
 
 
 # Byte-compiled / optimized / DLL files
