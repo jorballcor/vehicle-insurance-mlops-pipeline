@@ -1,4 +1,3 @@
-# tests/conftest.py
 from __future__ import annotations
 import json
 from pathlib import Path
@@ -38,83 +37,40 @@ def imbalanced_df():
     })
 
 
-# New fixtures for Data Validation testing
-@pytest.fixture
-def sample_schema_config():
-    """Fixture providing sample schema configuration for data validation"""
-    return {
-        "columns": {
-            "feature_a": "numerical",
-            "feature_b": "numerical", 
-            "Response": "categorical"
-        },
-        "numerical_columns": ["feature_a", "feature_b"],
-        "categorical_columns": ["Response"]
-    }
-
-
-@pytest.fixture
-def validation_schema_config():
-    """Fixture providing comprehensive schema config for validation tests"""
-    return {
-        "columns": {
-            "col1": "int",
-            "col2": "float",
-            "col3": "string",
-            "Response": "int"
-        },
-        "numerical_columns": ["col1", "col2"],
-        "categorical_columns": ["col3", "Response"]
-    }
-
-
-@pytest.fixture
-def valid_dataframe():
-    """Fixture providing a valid DataFrame matching the schema"""
-    return pd.DataFrame({
-        "col1": [1, 2, 3, 4, 5],
-        "col2": [1.1, 2.2, 3.3, 4.4, 5.5],
-        "col3": ["A", "B", "C", "A", "B"],
-        "Response": [0, 1, 0, 1, 0]
-    })
-
-
-@pytest.fixture
-def invalid_dataframe_missing_columns():
-    """Fixture providing DataFrame with missing columns"""
-    return pd.DataFrame({
-        "col1": [1, 2, 3],  # Missing col2, col3, Response
-    })
-
-
-@pytest.fixture
-def invalid_dataframe_wrong_count():
-    """Fixture providing DataFrame with wrong number of columns"""
-    return pd.DataFrame({
-        "col1": [1, 2, 3],
-        "col2": [1.1, 2.2, 3.3],
-        "extra_col": ["X", "Y", "Z"]  # Extra column, missing required ones
-    })
-
-
 @pytest.fixture
 def mock_data_ingestion_artifact(tmp_path):
     """Fixture providing mock DataIngestionArtifact with actual CSV files"""
     train_file = tmp_path / "train.csv"
     test_file = tmp_path / "test.csv"
     
-    # Create valid CSV files that match the schema
+    # Create valid CSV files that match the REAL schema
     train_df = pd.DataFrame({
-        "col1": [1, 2, 3],
-        "col2": [1.1, 2.2, 3.3],
-        "col3": ["A", "B", "C"],
+        "id": [1, 2, 3],
+        "Gender": ["Male", "Female", "Male"],
+        "Age": [25, 45, 33],
+        "Driving_License": [1, 1, 1],
+        "Region_Code": [28.0, 8.0, 15.0],
+        "Previously_Insured": [0, 1, 0],
+        "Vehicle_Age": ["1-2 Year", "> 2 Years", "< 1 Year"],
+        "Vehicle_Damage": ["Yes", "No", "Yes"],
+        "Annual_Premium": [2500.0, 3800.0, 2900.0],
+        "Policy_Sales_Channel": [26.0, 124.0, 26.0],
+        "Vintage": [150, 210, 95],
         "Response": [0, 1, 0]
     })
     test_df = pd.DataFrame({
-        "col1": [4, 5],
-        "col2": [4.4, 5.5],
-        "col3": ["A", "B"],
-        "Response": [1, 0]
+        "id": [4, 5],
+        "Gender": ["Female", "Male"],
+        "Age": [28, 52],
+        "Driving_License": [1, 1],
+        "Region_Code": [28.0, 3.0],
+        "Previously_Insured": [0, 1],
+        "Vehicle_Age": ["1-2 Year", "> 2 Years"],
+        "Vehicle_Damage": ["No", "Yes"],
+        "Annual_Premium": [2100.0, 4500.0],
+        "Policy_Sales_Channel": [152.0, 124.0],
+        "Vintage": [180, 300],
+        "Response": [0, 1]
     })
     
     train_df.to_csv(train_file, index=False)
@@ -151,6 +107,57 @@ def mock_data_ingestion_artifact_invalid(tmp_path):
     )
 
 
+# Data Validation fixtures
+@pytest.fixture
+def insurance_small_df():
+    """Fixture providing realistic vehicle insurance data matching the actual schema"""
+    return pd.DataFrame({
+        "id": [1, 2, 3, 4, 5, 6],
+        "Gender": ["Male", "Female", "Male", "Female", "Male", "Female"],
+        "Age": [25, 45, 33, 28, 52, 37],
+        "Driving_License": [1, 1, 1, 1, 1, 1],
+        "Region_Code": [28.0, 8.0, 15.0, 28.0, 3.0, 8.0],
+        "Previously_Insured": [0, 1, 0, 0, 1, 0],
+        "Vehicle_Age": ["1-2 Year", "> 2 Years", "< 1 Year", "1-2 Year", "> 2 Years", "< 1 Year"],
+        "Vehicle_Damage": ["Yes", "No", "Yes", "No", "Yes", "No"],
+        "Annual_Premium": [2500.0, 3800.0, 2900.0, 2100.0, 4500.0, 3200.0],
+        "Policy_Sales_Channel": [26.0, 124.0, 26.0, 152.0, 124.0, 26.0],
+        "Vintage": [150, 210, 95, 180, 300, 120],
+        "Response": [0, 1, 0, 0, 1, 0]
+    })
+
+
+@pytest.fixture
+def insurance_schema_config():
+    """Schema config that matches the actual schema.yaml structure"""
+    return {
+        "columns": [
+            {"id": "int"},
+            {"Gender": "category"},
+            {"Age": "int"},
+            {"Driving_License": "int"},
+            {"Region_Code": "float"},
+            {"Previously_Insured": "int"},
+            {"Vehicle_Age": "category"},
+            {"Vehicle_Damage": "category"},
+            {"Annual_Premium": "float"},
+            {"Policy_Sales_Channel": "float"},
+            {"Vintage": "int"},
+            {"Response": "int"}
+        ],
+        "numerical_columns": [
+            "Age", "Driving_License", "Region_Code", "Previously_Insured",
+            "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
+        ],
+        "categorical_columns": [
+            "Gender", "Vehicle_Age", "Vehicle_Damage"
+        ],
+        "drop_columns": ["_id"],
+        "num_features": ["Age", "Vintage"],
+        "mm_columns": ["Annual_Premium"]
+    }
+    
+    
 @pytest.fixture
 def mock_data_validation_config(tmp_path):
     """Fixture providing mock DataValidationConfig"""
@@ -164,85 +171,11 @@ def mock_data_validation_config(tmp_path):
 
 
 @pytest.fixture
-def data_validation_setup(mock_data_ingestion_artifact, mock_data_validation_config, validation_schema_config):
-    """Fixture providing complete setup for DataValidation tests"""
-    with pytest.MonkeyPatch().context() as m:
-        # Mock get_settings
-        mock_settings = Mock()
-        mock_settings.paths.schema_file_path = Path("test_schema.yaml")
-        m.setattr('src.components.data_validation.get_settings', lambda: mock_settings)
-        
-        # Mock read_yaml_file to return our test schema
-        m.setattr('src.components.data_validation.read_yaml_file', lambda file_path: validation_schema_config)
-        
-        from src.components.data_validation import DataValidation
-        
-        return DataValidation(
-            data_ingestion_artifact=mock_data_ingestion_artifact,
-            data_validation_config=mock_data_validation_config
-        )
-
-
-@pytest.fixture
-def schema_yaml_file(tmp_path):
-    """Fixture that creates a temporary schema YAML file"""
-    schema_content = {
-        "columns": {
-            "feature_a": "numerical",
-            "feature_b": "numerical",
-            "Response": "categorical"
-        },
-        "numerical_columns": ["feature_a", "feature_b"],
-        "categorical_columns": ["Response"]
-    }
-    
-    schema_file = tmp_path / "schema.yaml"
-    with open(schema_file, 'w') as f:
-        json.dump(schema_content, f)
-    
-    return schema_file
-
-
-@pytest.fixture
 def empty_dataframe():
     """Fixture providing empty DataFrame for edge case testing"""
     return pd.DataFrame()
 
 
-@pytest.fixture
-def large_dataframe():
-    """Fixture providing larger DataFrame for performance testing"""
-    return pd.DataFrame({
-        "col1": range(1000),
-        "col2": [i * 1.1 for i in range(1000)],
-        "col3": ["A", "B"] * 500,
-        "Response": [0, 1] * 500
-    })
-
-
-@pytest.fixture
-def dataframe_with_special_characters():
-    """Fixture providing DataFrame with special characters in categorical columns"""
-    return pd.DataFrame({
-        "col1": [1, 2, 3],
-        "col2": [1.1, 2.2, 3.3],
-        "col3": ["A-B", "C_D", "E@F"],  # Special characters
-        "Response": [0, 1, 0]
-    })
-
-
-@pytest.fixture
-def dataframe_with_mixed_data_types():
-    """Fixture providing DataFrame with mixed data types"""
-    return pd.DataFrame({
-        "col1": [1, "2", 3],  # Mixed types in numerical column
-        "col2": [1.1, 2.2, 3.3],
-        "col3": ["A", "B", "C"],
-        "Response": [0, 1, 0]
-    })
-
-
-# Fixture para testing de errores
 @pytest.fixture
 def corrupted_csv_file(tmp_path):
     """Fixture providing a corrupted CSV file"""
@@ -263,3 +196,4 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "validation: mark test as data validation test"
     )
+    
