@@ -40,6 +40,14 @@ class DataValidationConfig:
     
 
 @dataclass(frozen=True)
+class DataTransformationConfig:
+    data_transformation_dir: Path
+    transformed_train_file_path: Path
+    transformed_test_file_path: Path
+    transformed_object_file_path: Path
+
+
+@dataclass(frozen=True)
 class RunEntities:
     timestamp: str
     training: TrainingPipelineConfig
@@ -85,6 +93,19 @@ def build_entities(ts: str | None = None) -> RunEntities:
         data_validation_dir=validation_root,
         validation_report_file_path=validation_root / settings.validation.report_file_name,
     )
+    
+    transf_root = artifact_root / settings.transformation.dir_name
+    transformed_train = transf_root / settings.transformation.transformed_data_dir / Path(settings.paths.train_file_name).with_suffix(".npy").name
+    transformed_test = transf_root / settings.transformation.transformed_data_dir / Path(settings.paths.test_file_name).with_suffix(".npy").name
+    transformed_object = transf_root / settings.transformation.transformed_object_dir / settings.paths.preprocessing_object_file_name
+
+    transformation = DataTransformationConfig(
+        data_transformation_dir=transf_root,
+        transformed_train_file_path=transformed_train,
+        transformed_test_file_path=transformed_test,
+        transformed_object_file_path=transformed_object,
+    )
+
 
     return RunEntities(
         timestamp=ts,

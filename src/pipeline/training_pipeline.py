@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+from components import data_transformation
+from components.data_transformation import DataTransformation
 from src.logger import log
 from src.entities.config_entities import (
     build_entities,
@@ -11,7 +13,7 @@ from src.entities.config_entities import (
     DataIngestionConfig,
     DataValidationConfig
 )
-from src.entities.artifact_entity import DataIngestionArtifact, DataValidationArtifact
+from src.entities.artifact_entity import DataIngestionArtifact, DataTransformationArtifact, DataValidationArtifact
 from src.components.data_ingestion import DataIngestion
 from src.components.data_validation import DataValidation
 
@@ -110,7 +112,39 @@ class TrainPipeline:
         except Exception as exc:
             log.error("Error during Data Validation in TrainPipeline: %s", exc)
             raise
+    
+    
+    # ---------------------------
+    # Stage 3: Data Transformation
+    # ---------------------------  
+    def start_data_transformation(
+        self,
+        data_ingestion_artifact: DataIngestionArtifact,
+        data_validation_artifact: DataValidationArtifact
+    ) -> DataTransformationArtifact:
+        """
+        Starts the Data Transformation component of the TrainPipeline.
+        """
+        try:
+            log.info("Initializing Data Transformation component...")
 
+            data_transformation = DataTransformation(
+                data_ingestion_artifact=data_ingestion_artifact,
+                data_transformation_config=self.data_transformation_config,
+                data_validation_artifact=data_validation_artifact,
+            )
+
+            log.info("Executing data transformation process...")
+            data_transformation_artifact = data_transformation.initiate_data_transformation()
+
+            log.info("Data Transformation completed successfully.")
+            return data_transformation_artifact
+
+        except Exception as e:
+            msg = f"Error while starting data transformation: {e}"
+            log.error(msg)
+            raise RuntimeError(msg) from e        
+    
 
     # ---------------------------
     # Orchestration (for now: only ingestion & validation)
@@ -131,9 +165,16 @@ class TrainPipeline:
                 str(ingestion_artifact.test_file_path),
             )
             
-            data_validation_artifact = self.start_data_validation(data_ingestion_artifact=ingestion_artifact)
-            log.info("Completed data validation: %s", str(data_validation_artifact))
+            validation_artifact = self.start_data_validation(data_ingestion_artifact=ingestion_artifact)
+            log.info("Completed data validation: %s", str(validation_artifact))
             
+            
+            data_transformation_artifact = self.start_data_transformation(
+                data_ingestion_artifact=ingestion_artifact,
+                data_validation_artifact=validation_artifact
+            )
+            log.info("Completed data transformation: %s", str(data_transformation_artifact))
+
 
             log.info("=== End of run_pipeline (ingestion only) ===")
 

@@ -29,6 +29,7 @@ class DataIngestionArtifact(Artifact):
     trained_file_path: Path = Field(..., description="Path to the training split CSV file")
     test_file_path: Path = Field(..., description="Path to the testing split CSV file")
 
+
 # ----------------------------
 # Data Validation
 # ----------------------------
@@ -36,3 +37,12 @@ class DataValidationArtifact(Artifact):
     validation_status: bool
     message: constr(strip_whitespace=True, min_length=1)
     validation_report_file_path: Path
+    
+
+# ----------------------------
+# Data Transformation
+# ----------------------------
+class DataTransformationArtifact(Artifact):
+    transformed_object_file_path: Path
+    transformed_train_file_path: Path
+    transformed_test_file_path: Path
