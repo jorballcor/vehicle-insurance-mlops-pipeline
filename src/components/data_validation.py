@@ -209,8 +209,11 @@ class DataValidation:
 
             return data_validation_artifact
 
+        except FileNotFoundError as e:
+            log.error(f"Data file not found during validation: {e}")
+            raise  
         except Exception as e:
-            msg = f"Error during data validation: {e}"
+            msg = f"Unexpected error during data validation: {e}"
             log.error(msg)
             raise RuntimeError(msg) from e
 
