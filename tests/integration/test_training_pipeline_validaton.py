@@ -1,14 +1,16 @@
+# tests/integration/test_training_pipeline_validaton.py
 from src.config.settings import get_settings
 from src.pipeline.training_pipeline import TrainPipeline
 from src.entities.config_entities import build_entities
 from src.components.data_validation import DataValidation
 from src.entities.artifact_entity import DataIngestionArtifact
-from tests.conftest import FakeRepo, small_df
+from tests.conftest import FakeRepo, small_df, insurance_small_df
 import pandas as pd
 from pathlib import Path
+from unittest.mock import patch
 
 
-def test_pipeline_runs_validation_after_ingestion(tmp_path, monkeypatch, small_df):
+def test_pipeline_runs_validation_after_ingestion(tmp_path, monkeypatch, insurance_small_df):
     """Test that validation runs correctly after data ingestion in the pipeline"""
     # Setup environment
     monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
@@ -18,16 +20,16 @@ def test_pipeline_runs_validation_after_ingestion(tmp_path, monkeypatch, small_d
     ents = build_entities(ts="20990101_010203")
     pipeline = TrainPipeline(entities=ents)
 
-    # Create a simple data ingestion artifact (simulating previous step)
-    ingestion_dir = ents.ingestion.data_ingestion_dir / ents.ingestion.data_ingestion_dir
+    # ✅ CORREGIDO: Usar el path correcto para ingested data
+    ingestion_dir = ents.ingestion.data_ingestion_dir / "ingested"
     ingestion_dir.mkdir(parents=True, exist_ok=True)
     
     train_file = ingestion_dir / "train.csv"
     test_file = ingestion_dir / "test.csv"
     
-    # Split small_df into train/test
-    train_data = small_df.iloc[:4]  # First 4 rows for training
-    test_data = small_df.iloc[4:]   # Last 2 rows for testing
+    # Split insurance_small_df into train/test (que coincide con el schema real)
+    train_data = insurance_small_df.iloc[:4]  # First 4 rows for training
+    test_data = insurance_small_df.iloc[4:]   # Last 2 rows for testing
     
     train_data.to_csv(train_file, index=False)
     test_data.to_csv(test_file, index=False)
@@ -38,7 +40,7 @@ def test_pipeline_runs_validation_after_ingestion(tmp_path, monkeypatch, small_d
         test_file_path=test_file
     )
 
-    # Test data validation component
+    # Test data validation component - SIN MOCK (usa el schema real)
     validator = DataValidation(
         data_ingestion_artifact=ingestion_artifact,
         data_validation_config=ents.validation
@@ -60,8 +62,8 @@ def test_validation_fails_with_invalid_data(tmp_path, monkeypatch):
 
     ents = build_entities(ts="20990101_010203")
     
-    # Create ingestion directory and invalid data files
-    ingestion_dir = ents.ingestion.data_ingestion_dir / ents.ingestion.data_ingestion_dir
+    # ✅ CORREGIDO: Usar el path correcto
+    ingestion_dir = ents.ingestion.data_ingestion_dir / "ingested"
     ingestion_dir.mkdir(parents=True, exist_ok=True)
     
     train_file = ingestion_dir / "train.csv"
@@ -93,7 +95,7 @@ def test_validation_fails_with_invalid_data(tmp_path, monkeypatch):
     assert validation_artifact.validation_report_file_path.exists()
 
 
-def test_validation_in_pipeline_context(tmp_path, monkeypatch, small_df):
+def test_validation_in_pipeline_context(tmp_path, monkeypatch, insurance_small_df):
     """Test validation as part of the complete pipeline context"""
     monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
     get_settings.cache_clear()
@@ -101,16 +103,16 @@ def test_validation_in_pipeline_context(tmp_path, monkeypatch, small_df):
     ents = build_entities(ts="20990101_010203")
     pipeline = TrainPipeline(entities=ents)
 
-    # Simulate pipeline running data ingestion and validation
-    ingestion_dir = ents.ingestion.data_ingestion_dir / ents.ingestion.data_ingestion_dir
+    # ✅ CORREGIDO: Usar el path correcto
+    ingestion_dir = ents.ingestion.data_ingestion_dir / "ingested"
     ingestion_dir.mkdir(parents=True, exist_ok=True)
     
     train_file = ingestion_dir / "train.csv"
     test_file = ingestion_dir / "test.csv"
     
-    # Use the small_df fixture which should match your schema
-    train_data = small_df.iloc[:4]
-    test_data = small_df.iloc[4:]
+    # Use the insurance_small_df fixture que coincide con el schema real
+    train_data = insurance_small_df.iloc[:4]
+    test_data = insurance_small_df.iloc[4:]
     
     train_data.to_csv(train_file, index=False)
     test_data.to_csv(test_file, index=False)
@@ -129,3 +131,40 @@ def test_validation_in_pipeline_context(tmp_path, monkeypatch, small_df):
     
     # Verify the report directory structure was created
     assert ents.validation.data_validation_dir.exists()
+
+
+# ✅ NUEVO: Test para verificar compatibilidad con el schema antiguo
+def test_validation_with_old_small_df_fails(tmp_path, monkeypatch, small_df):
+    """Test that the original small_df fails validation (backwards compatibility check)"""
+    monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
+    get_settings.cache_clear()
+
+    ents = build_entities(ts="20990101_010203")
+    
+    ingestion_dir = ents.ingestion.data_ingestion_dir / "ingested"
+    ingestion_dir.mkdir(parents=True, exist_ok=True)
+    
+    train_file = ingestion_dir / "train.csv"
+    test_file = ingestion_dir / "test.csv"
+    
+    # Use the original small_df (should fail)
+    train_data = small_df.iloc[:4]
+    test_data = small_df.iloc[4:]
+    
+    train_data.to_csv(train_file, index=False)
+    test_data.to_csv(test_file, index=False)
+
+    ingestion_artifact = DataIngestionArtifact(
+        trained_file_path=train_file,
+        test_file_path=test_file
+    )
+
+    validator = DataValidation(
+        data_ingestion_artifact=ingestion_artifact,
+        data_validation_config=ents.validation
+    )
+
+    validation_artifact = validator.initiate_data_validation()
+
+    # Should fail with original small_df
+    assert validation_artifact.validation_status is False
