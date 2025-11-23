@@ -3,8 +3,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from components import data_transformation
-from components.data_transformation import DataTransformation
 from src.logger import log
 from src.entities.config_entities import (
     build_entities,
@@ -16,6 +14,7 @@ from src.entities.config_entities import (
 from src.entities.artifact_entity import DataIngestionArtifact, DataTransformationArtifact, DataValidationArtifact
 from src.components.data_ingestion import DataIngestion
 from src.components.data_validation import DataValidation
+from src.components.data_transformation import DataTransformation
 
 
 class TrainPipeline:
