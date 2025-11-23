@@ -1,687 +1,251 @@
-i# tests/test_data_transformation.py
-from __future__ import annotations
-
-import pytest
-import pandas as pd
 import numpy as np
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-import tempfile
-import pickle
+import pandas as pd
+from imblearn.combine import SMOTEENN
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.compose import ColumnTransformer
 
-from src.entities.artifact_entity import (
-    DataIngestionArtifact, 
-    DataValidationArtifact, 
-    DataTransformationArtifact
-)
+from src.config.settings import get_settings
 from src.entities.config_entities import DataTransformationConfig
+from src.entities.artifact_entity import (
+    DataTransformationArtifact,
+    DataIngestionArtifact,
+    DataValidationArtifact,
+)
+from src.logger import log
+from src.utils.file_utils import (
+    save_object,
+    save_numpy_array_data,
+    read_yaml_file,
+)
 
 
-class TestDataTransformation:
-    """Test suite for Data Transformation component"""
-    
-    @pytest.fixture
-    def mock_data_transformation_config(self, tmp_path):
-        """Mock data transformation config"""
-        return DataTransformationConfig(
-            data_transformation_dir=tmp_path / "data_transformation",
-            transformed_train_file_path=tmp_path / "transformed_train.csv",
-            transformed_test_file_path=tmp_path / "transformed_test.csv",
-            transformed_object_file_path=tmp_path / "preprocessor.pkl"
+settings = get_settings()
+TARGET_COLUMN = settings.target_column
+SCHEMA_FILE_PATH = settings.paths.schema_file_path
+
+
+class DataTransformation:
+    def __init__(
+        self,
+        data_ingestion_artifact: DataIngestionArtifact,
+        data_transformation_config: DataTransformationConfig,
+        data_validation_artifact: DataValidationArtifact,
+    ):
+        """
+        :param data_ingestion_artifact: Output reference of data ingestion artifact stage
+        :param data_transformation_config: configuration for data transformation
+        :param data_validation_artifact: result of data validation stage
+        """
+        try:
+            self.data_ingestion_artifact = data_ingestion_artifact
+            self.data_transformation_config = data_transformation_config
+            self.data_validation_artifact = data_validation_artifact
+            self._schema_config = read_yaml_file(file_path=SCHEMA_FILE_PATH)
+        except FileNotFoundError as e:
+            msg = f"Schema file not found at path: {SCHEMA_FILE_PATH}"
+            log.error(msg)
+            raise FileNotFoundError(msg) from e
+        except Exception as e:
+            msg = f"Unexpected error loading schema from '{SCHEMA_FILE_PATH}': {e}"
+            log.error(msg)
+            raise RuntimeError(msg) from e
+
+    @staticmethod
+    def read_data(file_path: str) -> pd.DataFrame:
+        """
+        Read a CSV file into a pandas DataFrame.
+        """
+        try:
+            return pd.read_csv(file_path)
+        except FileNotFoundError as e:
+            msg = f"Data file not found: {file_path}"
+            log.error(msg)
+            raise FileNotFoundError(msg) from e
+        except Exception as e:
+            msg = f"Unexpected error reading data from '{file_path}': {e}"
+            log.error(msg)
+            raise RuntimeError(msg) from e
+
+    def get_data_transformer_object(self) -> Pipeline:
+        """
+        Creates and returns a data transformer object for the data,
+        including feature scaling with StandardScaler and MinMaxScaler.
+        """
+        log.info("Entered get_data_transformer_object method of DataTransformation class")
+
+        try:
+            # Initialize transformers
+            numeric_transformer = StandardScaler()
+            min_max_scaler = MinMaxScaler()
+            log.info("Transformers initialized: StandardScaler and MinMaxScaler")
+
+            # Load schema configurations
+            num_features = self._schema_config.get("num_features")
+            mm_columns = self._schema_config.get("mm_columns")
+
+            if not isinstance(num_features, list):
+                msg = "Schema config 'num_features' must be a list."
+                log.error(msg)
+                raise ValueError(msg)
+
+            if not isinstance(mm_columns, list):
+                msg = "Schema config 'mm_columns' must be a list."
+                log.error(msg)
+                raise ValueError(msg)
+
+            log.info("Columns loaded from schema for scaling.")
+
+            # Creating preprocessor pipeline
+            preprocessor = ColumnTransformer(
+                transformers=[
+                    ("StandardScaler", numeric_transformer, num_features),
+                    ("MinMaxScaler", min_max_scaler, mm_columns),
+                ],
+                remainder="passthrough",  # Leaves other columns as they are
+            )
+
+            # Wrapping everything in a single pipeline
+            final_pipeline = Pipeline(steps=[("Preprocessor", preprocessor)])
+            log.info("Final preprocessing pipeline ready.")
+            log.info("Exited get_data_transformer_object method of DataTransformation class")
+
+            return final_pipeline
+
+        except Exception as e:
+            msg = f"Exception occurred in get_data_transformer_object: {e}"
+            log.error(msg)
+            raise RuntimeError(msg) from e
+
+    def _map_gender_column(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Map Gender column to 0 for Female and 1 for Male."""
+        log.info("Mapping 'Gender' column to binary values")
+        if "Gender" not in df.columns:
+            msg = "Column 'Gender' not found in DataFrame during gender mapping."
+            log.error(msg)
+            raise KeyError(msg)
+
+        df["Gender"] = df["Gender"].map({"Female": 0, "Male": 1}).astype(int)
+        return df
+
+    def _create_dummy_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Create dummy variables for categorical features."""
+        log.info("Creating dummy variables for categorical features")
+        df = pd.get_dummies(df, drop_first=True)
+        return df
+
+    def _rename_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Rename specific columns and ensure integer types for dummy columns."""
+        log.info("Renaming specific columns and casting to int")
+        df = df.rename(
+            columns={
+                "Vehicle_Age_< 1 Year": "Vehicle_Age_lt_1_Year",
+                "Vehicle_Age_> 2 Years": "Vehicle_Age_gt_2_Years",
+            }
         )
-    
-    @pytest.fixture
-    def mock_data_validation_artifact_success(self):
-        """Mock successful data validation artifact"""
-        return DataValidationArtifact(
-            validation_status=True,
-            message="Validation successful",
-            validation_report_file_path=Path("/fake/report.json")
-        )
-    
-    @pytest.fixture
-    def mock_data_validation_artifact_failed(self):
-        """Mock failed data validation artifact"""
-        return DataValidationArtifact(
-            validation_status=False,
-            message="Validation failed: missing columns",
-            validation_report_file_path=Path("/fake/report.json")
-        )
-    
-    @pytest.fixture
-    def sample_transformed_data(self):
-        """Sample transformed data for testing"""
-        return pd.DataFrame({
-            'Age_scaled': [0.1, 0.2, 0.3, 0.4],
-            'Annual_Premium_scaled': [0.15, 0.25, 0.35, 0.45],
-            'Vintage_scaled': [0.2, 0.3, 0.4, 0.5],
-            'Gender_Male': [1, 0, 1, 0],
-            'Gender_Female': [0, 1, 0, 1],
-            'Vehicle_Age_<1_Year': [1, 0, 0, 1],
-            'Vehicle_Age_1-2_Year': [0, 1, 0, 0],
-            'Vehicle_Age_>2_Years': [0, 0, 1, 0],
-            'Vehicle_Damage_Yes': [1, 0, 1, 0],
-            'Vehicle_Damage_No': [0, 1, 0, 1],
-            'Response': [0, 1, 0, 1]
-        })
+        for col in ["Vehicle_Age_lt_1_Year", "Vehicle_Age_gt_2_Years", "Vehicle_Damage_Yes"]:
+            if col in df.columns:
+                df[col] = df[col].astype("int")
+        return df
 
-    def test_init_successful_validation(
-        self, 
-        mock_data_ingestion_artifact,
-        mock_data_validation_artifact_success,
-        mock_data_transformation_config
-    ):
-        """Test initialization with successful validation"""
-        from src.components.data_transformation import DataTransformation
-        
-        # Mock schema loading with EXACT schema from schema.yaml
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml:
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            transformer = DataTransformation(
-                data_ingestion_artifact=mock_data_ingestion_artifact,
-                data_transformation_config=mock_data_transformation_config,
-                data_validation_artifact=mock_data_validation_artifact_success
+    def _drop_id_column(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Drop the id column (or the configured drop column) if it exists."""
+        log.info("Dropping id column (or configured drop column) if present")
+        drop_col = self._schema_config.get("drop_columns")
+        if drop_col and drop_col in df.columns:
+            df = df.drop(drop_col, axis=1)
+        return df
+
+    def initiate_data_transformation(self) -> DataTransformationArtifact:
+        """
+        Initiates the data transformation component for the pipeline.
+        """
+        try:
+            log.info("Data transformation started.")
+            if not self.data_validation_artifact.validation_status:
+                msg = f"Data validation failed: {self.data_validation_artifact.message}"
+                log.error(msg)
+                raise ValueError(msg)
+
+            # Load train and test data
+            train_df = self.read_data(file_path=self.data_ingestion_artifact.trained_file_path)
+            test_df = self.read_data(file_path=self.data_ingestion_artifact.test_file_path)
+            log.info("Train and test data loaded.")
+
+            # Separate input and target features
+            input_feature_train_df = train_df.drop(columns=[TARGET_COLUMN], axis=1)
+            target_feature_train_df = train_df[TARGET_COLUMN]
+
+            input_feature_test_df = test_df.drop(columns=[TARGET_COLUMN], axis=1)
+            target_feature_test_df = test_df[TARGET_COLUMN]
+            log.info("Input and target columns defined for train and test data.")
+
+            # Apply custom transformations in specified sequence
+            input_feature_train_df = self._map_gender_column(input_feature_train_df)
+            input_feature_train_df = self._drop_id_column(input_feature_train_df)
+            input_feature_train_df = self._create_dummy_columns(input_feature_train_df)
+            input_feature_train_df = self._rename_columns(input_feature_train_df)
+
+            input_feature_test_df = self._map_gender_column(input_feature_test_df)
+            input_feature_test_df = self._drop_id_column(input_feature_test_df)
+            input_feature_test_df = self._create_dummy_columns(input_feature_test_df)
+            input_feature_test_df = self._rename_columns(input_feature_test_df)
+            log.info("Custom transformations applied to train and test data.")
+
+            # Get preprocessor
+            log.info("Creating data transformer object (preprocessor).")
+            preprocessor = self.get_data_transformer_object()
+            log.info("Preprocessor object obtained.")
+
+            # Transform data
+            log.info("Initializing transformation for training data.")
+            input_feature_train_arr = preprocessor.fit_transform(input_feature_train_df)
+
+            log.info("Initializing transformation for testing data.")
+            input_feature_test_arr = preprocessor.transform(input_feature_test_df)
+            log.info("Transformation done end-to-end for train and test data.")
+
+            # Handle class imbalance with SMOTEENN
+            log.info("Applying SMOTEENN for handling imbalanced dataset.")
+            smt = SMOTEENN(sampling_strategy="minority")
+
+            input_feature_train_final, target_feature_train_final = smt.fit_resample(
+                input_feature_train_arr, target_feature_train_df
             )
-            
-            assert transformer.data_ingestion_artifact == mock_data_ingestion_artifact
-            assert transformer.data_transformation_config == mock_data_transformation_config
-            assert transformer.data_validation_artifact == mock_data_validation_artifact_success
-
-    def test_init_failed_validation_raises_error(
-        self, 
-        mock_data_ingestion_artifact,
-        mock_data_validation_artifact_failed,
-        mock_data_transformation_config
-    ):
-        """Test initialization raises error when validation failed"""
-        from src.components.data_transformation import DataTransformation
-        
-        # Mock schema with EXACT schema from schema.yaml
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml:
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            transformer = DataTransformation(
-                data_ingestion_artifact=mock_data_ingestion_artifact,
-                data_transformation_config=mock_data_transformation_config,
-                data_validation_artifact=mock_data_validation_artifact_failed
+            input_feature_test_final, target_feature_test_final = smt.fit_resample(
+                input_feature_test_arr, target_feature_test_df
             )
-            
-            # The actual implementation should check validation status during initiation
-            with pytest.raises(RuntimeError, match="Data validation failed"):
-                transformer.initiate_data_transformation()
+            log.info("SMOTEENN applied to train and test data.")
 
-    @patch('pandas.read_csv')
-    def test_data_loading_success(
-        self, 
-        mock_read_csv,
-        mock_data_ingestion_artifact,
-        mock_data_validation_artifact_success,
-        mock_data_transformation_config,
-        insurance_small_df
-    ):
-        """Test successful data loading from CSV files"""
-        from src.components.data_transformation import DataTransformation
-        
-        # Mock the CSV reading
-        mock_read_csv.return_value = insurance_small_df
-        
-        # Mock schema with EXACT schema from schema.yaml
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml:
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            transformer = DataTransformation(
-                data_ingestion_artifact=mock_data_ingestion_artifact,
-                data_transformation_config=mock_data_transformation_config,
-                data_validation_artifact=mock_data_validation_artifact_success
+            # Concatenate features and target
+            train_arr = np.c_[input_feature_train_final, np.array(target_feature_train_final)]
+            test_arr = np.c_[input_feature_test_final, np.array(target_feature_test_final)]
+            log.info("Feature-target concatenation done for train and test arrays.")
+
+            # Save artifacts
+            save_object(
+                self.data_transformation_config.transformed_object_file_path,
+                preprocessor,
             )
-            
-            # Test that data can be loaded (this happens inside initiate_data_transformation)
-            with patch.object(transformer, 'initiate_data_transformation'):
-                transformer.initiate_data_transformation()
-            
-            # Verify CSV was read
-            assert mock_read_csv.called
-
-    def test_preprocessing_pipeline_creation(
-        self,
-        mock_data_ingestion_artifact,
-        mock_data_validation_artifact_success,
-        mock_data_transformation_config
-    ):
-        """Test that preprocessing pipeline is created correctly"""
-        from src.components.data_transformation import DataTransformation
-        
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml:
-            # Provide EXACT schema from schema.yaml
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            # Mock sklearn components
-            with patch('sklearn.compose.ColumnTransformer') as MockColumnTransformer, \
-                 patch('sklearn.preprocessing.StandardScaler') as MockStandardScaler, \
-                 patch('sklearn.preprocessing.MinMaxScaler') as MockMinMaxScaler, \
-                 patch('sklearn.pipeline.Pipeline') as MockPipeline:
-                
-                # Mock the transformers to return expected values
-                mock_standard_scaler = Mock()
-                mock_minmax_scaler = Mock()
-                MockStandardScaler.return_value = mock_standard_scaler
-                MockMinMaxScaler.return_value = mock_minmax_scaler
-                
-                transformer = DataTransformation(
-                    data_ingestion_artifact=mock_data_ingestion_artifact,
-                    data_transformation_config=mock_data_transformation_config,
-                    data_validation_artifact=mock_data_validation_artifact_success
-                )
-                
-                # Test the preprocessor creation method
-                if hasattr(transformer, 'get_data_transformer_object'):
-                    preprocessor = transformer.get_data_transformer_object()
-                    
-                    # Verify preprocessor components were created with correct parameters
-                    MockStandardScaler.assert_called_once()
-                    MockMinMaxScaler.assert_called_once()
-                    
-                    # Verify ColumnTransformer was called with correct transformers
-                    MockColumnTransformer.assert_called_once()
-                    call_args = MockColumnTransformer.call_args
-                    transformers = call_args[1]['transformers']
-                    
-                    # Check that we have StandardScaler for num_features and MinMaxScaler for mm_columns
-                    assert len(transformers) == 2
-                    assert transformers[0][0] == "StandardScaler"
-                    assert transformers[1][0] == "MinMaxScaler"
-
-    @patch('pandas.DataFrame.to_csv')
-    @patch('pickle.dump')
-    def test_transformation_artifact_creation(
-        self,
-        mock_pickle_dump,
-        mock_to_csv,
-        mock_data_ingestion_artifact,
-        mock_data_validation_artifact_success,
-        mock_data_transformation_config
-    ):
-        """Test that transformation artifacts are created and saved"""
-        from src.components.data_transformation import DataTransformation
-        
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml:
-            # Use EXACT schema from schema.yaml
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            with patch('pandas.read_csv') as mock_read_csv, \
-                 patch('src.components.data_transformation.DataTransformation.get_data_transformer_object') as mock_preprocessor:
-                
-                # Mock realistic data that matches the schema
-                mock_train_data = pd.DataFrame({
-                    "id": [1, 2, 3],
-                    "Gender": ["Male", "Female", "Male"],
-                    "Age": [25, 45, 33],
-                    "Driving_License": [1, 1, 1],
-                    "Region_Code": [28.0, 8.0, 15.0],
-                    "Previously_Insured": [0, 1, 0],
-                    "Vehicle_Age": ["1-2 Year", "> 2 Years", "< 1 Year"],
-                    "Vehicle_Damage": ["Yes", "No", "Yes"],
-                    "Annual_Premium": [2500.0, 3800.0, 2900.0],
-                    "Policy_Sales_Channel": [26.0, 124.0, 26.0],
-                    "Vintage": [150, 210, 95],
-                    "Response": [0, 1, 0]
-                })
-                mock_test_data = pd.DataFrame({
-                    "id": [4, 5],
-                    "Gender": ["Female", "Male"],
-                    "Age": [28, 52],
-                    "Driving_License": [1, 1],
-                    "Region_Code": [28.0, 3.0],
-                    "Previously_Insured": [0, 1],
-                    "Vehicle_Age": ["1-2 Year", "> 2 Years"],
-                    "Vehicle_Damage": ["No", "Yes"],
-                    "Annual_Premium": [2100.0, 4500.0],
-                    "Policy_Sales_Channel": [152.0, 124.0],
-                    "Vintage": [180, 300],
-                    "Response": [0, 1]
-                })
-                
-                def read_csv_side_effect(file_path):
-                    if "train" in str(file_path):
-                        return mock_train_data
-                    else:
-                        return mock_test_data
-                
-                mock_read_csv.side_effect = read_csv_side_effect
-                
-                # Mock preprocessor
-                mock_preprocessor_instance = Mock()
-                mock_preprocessor.return_value = mock_preprocessor_instance
-                
-                # Mock transformed data (without id column as it should be dropped)
-                transformed_features = mock_train_data.drop(['id', 'Response'], axis=1)
-                mock_preprocessor_instance.fit_transform.return_value = transformed_features.values
-                mock_preprocessor_instance.transform.return_value = transformed_features.values
-                
-                transformer = DataTransformation(
-                    data_ingestion_artifact=mock_data_ingestion_artifact,
-                    data_transformation_config=mock_data_transformation_config,
-                    data_validation_artifact=mock_data_validation_artifact_success
-                )
-                
-                # Execute the transformation
-                artifact = transformer.initiate_data_transformation()
-                
-                # Verify artifact creation
-                assert isinstance(artifact, DataTransformationArtifact)
-                assert artifact.transformed_train_file_path == mock_data_transformation_config.transformed_train_file_path
-                assert artifact.transformed_test_file_path == mock_data_transformation_config.transformed_test_file_path
-                assert artifact.transformed_object_file_path == mock_data_transformation_config.transformed_object_file_path
-                
-                # Verify files were saved
-                assert mock_to_csv.called
-                assert mock_pickle_dump.called
-
-    def test_error_handling_invalid_data(
-        self,
-        mock_data_ingestion_artifact_invalid,
-        mock_data_validation_artifact_success,
-        mock_data_transformation_config
-    ):
-        """Test error handling with invalid data files"""
-        from src.components.data_transformation import DataTransformation
-        
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml:
-            # Use EXACT schema from schema.yaml
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            transformer = DataTransformation(
-                data_ingestion_artifact=mock_data_ingestion_artifact_invalid,
-                data_transformation_config=mock_data_transformation_config,
-                data_validation_artifact=mock_data_validation_artifact_success
+            save_numpy_array_data(
+                self.data_transformation_config.transformed_train_file_path,
+                array=train_arr,
             )
-            
-            # Test that transformation fails with schema mismatch
-            with pytest.raises(Exception):  # Could be KeyError, ValueError, etc.
-                transformer.initiate_data_transformation()
-
-    def test_directory_creation(
-        self,
-        mock_data_ingestion_artifact,
-        mock_data_validation_artifact_success,
-        mock_data_transformation_config
-    ):
-        """Test that necessary directories are created"""
-        from src.components.data_transformation import DataTransformation
-        
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml:
-            # Use EXACT schema from schema.yaml
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            # Mock data reading and preprocessing
-            with patch('pandas.read_csv') as mock_read_csv, \
-                 patch('src.components.data_transformation.DataTransformation.get_data_transformer_object') as mock_preprocessor:
-                
-                # Mock realistic data
-                mock_data = pd.DataFrame({
-                    "id": [1, 2, 3],
-                    "Gender": ["Male", "Female", "Male"],
-                    "Age": [25, 45, 33],
-                    "Driving_License": [1, 1, 1],
-                    "Region_Code": [28.0, 8.0, 15.0],
-                    "Previously_Insured": [0, 1, 0],
-                    "Vehicle_Age": ["1-2 Year", "> 2 Years", "< 1 Year"],
-                    "Vehicle_Damage": ["Yes", "No", "Yes"],
-                    "Annual_Premium": [2500.0, 3800.0, 2900.0],
-                    "Policy_Sales_Channel": [26.0, 124.0, 26.0],
-                    "Vintage": [150, 210, 95],
-                    "Response": [0, 1, 0]
-                })
-                mock_read_csv.return_value = mock_data
-                
-                # Mock preprocessor
-                mock_preprocessor_instance = Mock()
-                mock_preprocessor.return_value = mock_preprocessor_instance
-                mock_preprocessor_instance.fit_transform.return_value = mock_data.drop(['id', 'Response'], axis=1).values
-                mock_preprocessor_instance.transform.return_value = mock_data.drop(['id', 'Response'], axis=1).values
-                
-                transformer = DataTransformation(
-                    data_ingestion_artifact=mock_data_ingestion_artifact,
-                    data_transformation_config=mock_data_transformation_config,
-                    data_validation_artifact=mock_data_validation_artifact_success
-                )
-                
-                # Mock the file operations but keep directory creation
-                with patch('pandas.DataFrame.to_csv'), \
-                     patch('pickle.dump'):
-                    
-                    # Actually call initiate_data_transformation to trigger directory creation
-                    with patch('pathlib.Path.mkdir') as mock_mkdir:
-                        try:
-                            transformer.initiate_data_transformation()
-                        except:
-                            pass  # We don't care about the actual execution, just the directory creation
-                        
-                        # Verify directory creation was attempted
-                        assert mock_mkdir.called
-
-
-# Tests de integración
-class TestDataTransformationIntegration:
-    """Integration tests for Data Transformation"""
-    
-    @pytest.fixture
-    def mock_data_validation_artifact_success(self):
-        """Fixture para los tests de integración"""
-        return DataValidationArtifact(
-            validation_status=True,
-            message="Validation successful",
-            validation_report_file_path=Path("/fake/report.json")
-        )
-    
-    @pytest.mark.integration
-    @pytest.mark.slow
-    def test_end_to_end_transformation_with_real_files(
-        self,
-        mock_data_ingestion_artifact,
-        mock_data_validation_artifact_success,
-        mock_data_transformation_config
-    ):
-        """Integration test: complete transformation with real files"""
-        from src.components.data_transformation import DataTransformation
-        
-        # This test uses the actual CSV files created by the fixture
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml:
-            # Use EXACT schema from schema.yaml
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            transformer = DataTransformation(
-                data_ingestion_artifact=mock_data_ingestion_artifact,
-                data_transformation_config=mock_data_transformation_config,
-                data_validation_artifact=mock_data_validation_artifact_success
+            save_numpy_array_data(
+                self.data_transformation_config.transformed_test_file_path,
+                array=test_arr,
             )
-            
-            # Verify the component initializes correctly
-            assert transformer is not None
-            
-            # Verify that output directories are set up
-            assert mock_data_transformation_config.data_transformation_dir.exists()
+            log.info("Saved transformation object and transformed numpy arrays.")
 
-    @pytest.mark.integration
-    def test_transformed_files_creation(
-        self,
-        mock_data_ingestion_artifact,
-        mock_data_validation_artifact_success,
-        mock_data_transformation_config
-    ):
-        """Test that transformed files are actually created"""
-        from src.components.data_transformation import DataTransformation
-        
-        with patch('src.components.data_transformation.read_yaml_file') as mock_read_yaml, \
-             patch('pandas.read_csv') as mock_read_csv, \
-             patch('pandas.DataFrame.to_csv') as mock_to_csv, \
-             patch('pickle.dump') as mock_pickle_dump:
-            
-            # Use EXACT schema from schema.yaml
-            mock_read_yaml.return_value = {
-                "columns": [
-                    {"id": "int"},
-                    {"Gender": "category"},
-                    {"Age": "int"},
-                    {"Driving_License": "int"},
-                    {"Region_Code": "float"},
-                    {"Previously_Insured": "int"},
-                    {"Vehicle_Age": "category"},
-                    {"Vehicle_Damage": "category"},
-                    {"Annual_Premium": "float"},
-                    {"Policy_Sales_Channel": "float"},
-                    {"Vintage": "int"},
-                    {"Response": "int"}
-                ],
-                "numerical_columns": [
-                    "Age", "Driving_License", "Region_Code", "Previously_Insured",
-                    "Annual_Premium", "Policy_Sales_Channel", "Vintage", "Response"
-                ],
-                "categorical_columns": [
-                    "Gender", "Vehicle_Age", "Vehicle_Damage"
-                ],
-                "drop_columns": ["_id"],
-                "num_features": ["Age", "Vintage"],
-                "mm_columns": ["Annual_Premium"]
-            }
-            
-            # Mock the data
-            mock_data = pd.DataFrame({
-                "id": [1, 2, 3],
-                "Gender": ["Male", "Female", "Male"],
-                "Age": [25, 45, 33],
-                "Driving_License": [1, 1, 1],
-                "Region_Code": [28.0, 8.0, 15.0],
-                "Previously_Insured": [0, 1, 0],
-                "Vehicle_Age": ["1-2 Year", "> 2 Years", "< 1 Year"],
-                "Vehicle_Damage": ["Yes", "No", "Yes"],
-                "Annual_Premium": [2500.0, 3800.0, 2900.0],
-                "Policy_Sales_Channel": [26.0, 124.0, 26.0],
-                "Vintage": [150, 210, 95],
-                "Response": [0, 1, 0]
-            })
-            mock_read_csv.return_value = mock_data
-            
-            transformer = DataTransformation(
-                data_ingestion_artifact=mock_data_ingestion_artifact,
-                data_transformation_config=mock_data_transformation_config,
-                data_validation_artifact=mock_data_validation_artifact_success
+            log.info("Data transformation completed successfully.")
+
+            return DataTransformationArtifact(
+                transformed_object_file_path=self.data_transformation_config.transformed_object_file_path,
+                transformed_train_file_path=self.data_transformation_config.transformed_train_file_path,
+                transformed_test_file_path=self.data_transformation_config.transformed_test_file_path,
             )
-            
-            # Mock the preprocessor
-            with patch.object(transformer, 'get_data_transformer_object') as mock_preprocessor:
-                mock_preprocessor_instance = Mock()
-                mock_preprocessor.return_value = mock_preprocessor_instance
-                
-                # Mock transformed data (without id and Response columns)
-                transformed_features = mock_data.drop(['id', 'Response'], axis=1)
-                mock_preprocessor_instance.fit_transform.return_value = transformed_features.values
-                mock_preprocessor_instance.transform.return_value = transformed_features.values
-                
-                artifact = transformer.initiate_data_transformation()
-                
-                # Verify files were attempted to be saved
-                assert mock_to_csv.called
-                assert mock_pickle_dump.called
-                assert artifact.transformed_train_file_path == mock_data_transformation_config.transformed_train_file_path
+
+        except Exception as e:
+            msg = f"Error during data transformation: {e}"
+            log.error(msg)
+            raise RuntimeError(msg) from e
