@@ -62,7 +62,6 @@ def test_validation_fails_with_invalid_data(tmp_path, monkeypatch):
 
     ents = build_entities(ts="20990101_010203")
     
-    # ✅ CORREGIDO: Usar el path correcto
     ingestion_dir = ents.ingestion.data_ingestion_dir / "ingested"
     ingestion_dir.mkdir(parents=True, exist_ok=True)
     
@@ -133,7 +132,6 @@ def test_validation_in_pipeline_context(tmp_path, monkeypatch, insurance_small_d
     assert ents.validation.data_validation_dir.exists()
 
 
-# ✅ NUEVO: Test para verificar compatibilidad con el schema antiguo
 def test_validation_with_old_small_df_fails(tmp_path, monkeypatch, small_df):
     """Test that the original small_df fails validation (backwards compatibility check)"""
     monkeypatch.setenv("PATHS__ARTIFACT_DIR", str(tmp_path / "artifact"))
