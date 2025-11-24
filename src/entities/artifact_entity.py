@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from pydantic import BaseModel, Field, constr
+from pydantic import BaseModel, Field, constr, confloat
 
 
 # ----------------------------
