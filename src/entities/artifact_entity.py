@@ -46,3 +46,20 @@ class DataTransformationArtifact(Artifact):
     transformed_object_file_path: Path
     transformed_train_file_path: Path
     transformed_test_file_path: Path
+    
+
+# ----------------------------
+# Model Metrics
+# ----------------------------
+class ClassificationMetricArtifact(Artifact):
+    f1_score: confloat(ge=0, le=1)
+    precision_score: confloat(ge=0, le=1)
+    recall_score: confloat(ge=0, le=1)
+
+
+# ----------------------------
+# Model Trainer
+# ----------------------------
+class ModelTrainerArtifact(Artifact):
+    trained_model_file_path: Path
+    metric_artifact: ClassificationMetricArtifact
