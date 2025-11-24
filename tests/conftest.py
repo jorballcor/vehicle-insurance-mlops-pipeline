@@ -4,8 +4,8 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pandas as pd
-from src.entities.artifact_entity import DataIngestionArtifact, DataValidationArtifact
-from src.entities.config_entities import DataTransformationConfig, DataValidationConfig
+from src.entities.artifact_entity import DataIngestionArtifact, DataTransformationArtifact, DataValidationArtifact
+from src.entities.config_entities import DataTransformationConfig, DataValidationConfig, ModelTrainerConfig
 import pytest
 
 # A tiny fake repo that mimics your VehicleInsuranceRepository
@@ -266,6 +266,44 @@ def mock_transformer_instance(
             data_transformation_config=mock_data_transformation_config,
             data_validation_artifact=mock_data_validation_artifact_success,
         )
+
+
+# Model Training fixtures
+@pytest.fixture
+def data_transformation_artifact(tmp_path) -> DataTransformationArtifact:
+    """Create a DataTransformationArtifact with dummy paths."""
+    transf_dir = tmp_path / "transformation"
+    transf_dir.mkdir(parents=True, exist_ok=True)
+
+    transformed_train_file_path = transf_dir / "train.npy"
+    transformed_test_file_path = transf_dir / "test.npy"
+    transformed_object_file_path = transf_dir / "preprocessor.pkl"
+
+    return DataTransformationArtifact(
+        transformed_object_file_path=transformed_object_file_path,
+        transformed_train_file_path=transformed_train_file_path,
+        transformed_test_file_path=transformed_test_file_path,
+    )
+
+
+@pytest.fixture
+def model_trainer_config(tmp_path) -> ModelTrainerConfig:
+    """Create a real ModelTrainerConfig instance with test paths."""
+    model_dir = tmp_path / "model_trainer"
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    return ModelTrainerConfig(
+        model_trainer_dir=model_dir,
+        trained_model_file_path=model_dir / "final_model.pkl",
+        expected_accuracy=0.8,
+        model_config_file_path=model_dir / "model_config.yaml",
+        n_estimators=10,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        max_depth=3,
+        criterion="gini",
+        random_state=42,
+    )
 
 
 # Edge case fixtures
