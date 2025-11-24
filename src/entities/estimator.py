@@ -48,7 +48,7 @@ class MyModel:
             dataframe (pd.DataFrame): Input features (already cleaned and with correct structure).
 
         Returns:
-            np.ndarray: Model predictions.
+            dataframe (pd.DataFrame): Model predictions.
         """
         try:
             log.info("Starting prediction process.")
