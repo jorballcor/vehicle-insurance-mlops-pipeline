@@ -48,6 +48,27 @@ class DataTransformationConfig:
 
 
 @dataclass(frozen=True)
+class ModelTrainerConfig:
+    model_trainer_dir: Path
+    trained_model_file_path: Path
+    expected_accuracy: float
+    model_config_file_path: Path
+    n_estimators: int
+    min_samples_split: int
+    min_samples_leaf: int
+    max_depth: int
+    criterion: str
+    random_state: int
+
+
+@dataclass(frozen=True)
+class ModelEvaluationConfig:
+    changed_threshold_score: float
+    bucket_name: str
+    s3_model_key_path: str
+
+
+@dataclass(frozen=True)
 class RunEntities:
     timestamp: str
     training: TrainingPipelineConfig
