@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from src.components.model_trainer import ModelTrainer
 from src.logger import log
 from src.entities.config_entities import (
     build_entities,
@@ -11,7 +12,7 @@ from src.entities.config_entities import (
     DataIngestionConfig,
     DataValidationConfig
 )
-from src.entities.artifact_entity import DataIngestionArtifact, DataTransformationArtifact, DataValidationArtifact
+from src.entities.artifact_entity import DataIngestionArtifact, DataTransformationArtifact, DataValidationArtifact, ModelTrainerArtifact
 from src.components.data_ingestion import DataIngestion
 from src.components.data_validation import DataValidation
 from src.components.data_transformation import DataTransformation
@@ -144,9 +145,31 @@ class TrainPipeline:
             log.error(msg)
             raise RuntimeError(msg) from e        
     
+    # ---------------------------
+    # Stage 4: Model Trainer
+    # ---------------------------
+    def start_model_trainer(
+        self, 
+        data_transformation_artifact: DataTransformationArtifact
+    ) -> ModelTrainerArtifact:
+        """
+        This method of TrainPipeline class is responsible for starting model training
+        """
+        try:
+            model_trainer = ModelTrainer(
+                data_transformation_artifact=data_transformation_artifact,
+                model_trainer_config=self.model_trainer_config
+            )
+            model_trainer_artifact = model_trainer.initiate_model_trainer()
+            return model_trainer_artifact
+
+        except Exception as e:
+            msg = f"Error while starting model training: {e}"
+            log.error(msg)
+            raise RuntimeError(msg) from e
 
     # ---------------------------
-    # Orchestration (for now: only ingestion & validation)
+    # Orchestration (ingestion, validation, transformation and model training)
     # ---------------------------
     def run_pipeline(self) -> None:
         """
@@ -174,8 +197,13 @@ class TrainPipeline:
             )
             log.info("Completed data transformation: %s", str(data_transformation_artifact))
 
-
-            log.info("=== End of run_pipeline (ingestion only) ===")
+            model_trainer_artifact = self.start_model_trainer(
+                data_transformation_artifact=data_transformation_artifact
+            )
+            log.info("Completed model training: %s", str(model_trainer_artifact))   
+            
+            
+            log.info("=== End of run_pipeline ===")
 
         except Exception as exc:
             log.error("Failure in run_pipeline: %s", exc)
