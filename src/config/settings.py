@@ -110,7 +110,7 @@ class ModelTrainerSettings(BaseModel):
 
 class ModelEvaluationSettings(BaseModel):
     changed_threshold_score: confloat(gt=0, lt=1) = 0.02
-    bucket_name: str = "my-model-mlopsproj"
+    bucket_name: str = "vehicle-insurance-mlops-nov25"
     pusher_s3_key: str = "model-registry"
 
     @field_validator("bucket_name")

@@ -63,3 +63,21 @@ class ClassificationMetricArtifact(Artifact):
 class ModelTrainerArtifact(Artifact):
     trained_model_file_path: Path
     metric_artifact: ClassificationMetricArtifact
+    
+
+# ----------------------------
+# Model Evaluation
+# ----------------------------
+class ModelEvaluationArtifact(Artifact):
+    is_model_accepted: bool
+    changed_accuracy: confloat(ge=0, le=1)
+    s3_model_path: Path
+    trained_model_path: Path
+
+
+# ----------------------------
+# Model Pusher
+# ----------------------------
+class ModelPusherArtifact(Artifact):
+    bucket_name: constr(strip_whitespace=True, min_length=1)
+    s3_model_path: Path
