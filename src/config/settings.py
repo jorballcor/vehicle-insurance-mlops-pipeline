@@ -60,7 +60,7 @@ class AWSSettings(BaseSettings):
     # Se tomarán de env si existen; si no, quedan en None
     access_key_id: Optional[SecretStr] = Field(default=None, validation_alias="AWS_ACCESS_KEY_ID")
     secret_access_key: Optional[SecretStr] = Field(default=None, validation_alias="AWS_SECRET_ACCESS_KEY")
-    region_name: str = "us-east-1"
+    region_name: str = "eu-west-3"
 
     model_config = {
         "env_prefix": "",  # usamos alias explícitos arriba
