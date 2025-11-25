@@ -5,7 +5,7 @@ from src.cloud_storage.aws_storage import SimpleStorageService
 from src.entities.estimator import MyModel
 
 
-class Proj1Estimator:
+class VehicleInsuranceEstimator:
     """
     Wrapper class for loading, saving, and running predictions using a model 
     stored in an AWS S3 bucket.
@@ -101,6 +101,6 @@ class Proj1Estimator:
             return self.loaded_model.predict(dataframe=dataframe)
 
         except Exception as e:
-            msg = f"Error during prediction via Proj1Estimator: {e}"
+            msg = f"Error during prediction via VehicleInsuranceEstimator: {e}"
             log.error(msg)
             raise RuntimeError(msg) from e

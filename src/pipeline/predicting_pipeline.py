@@ -2,7 +2,7 @@ from pandas import DataFrame
 
 from src.logger import log
 from src.entities.config_entities import VehiclePredictorConfig
-from src.entities.s3_estimator import Proj1Estimator
+from src.entities.s3_estimator import VehicleInsuranceEstimator
 
 
 class VehicleData:
@@ -146,7 +146,7 @@ class VehicleDataClassifier:
         try:
             log.info("Entered predict method of VehicleDataClassifier class")
 
-            model = Proj1Estimator(
+            model = VehicleInsuranceEstimator(
                 bucket_name=self.prediction_pipeline_config.model_bucket_name,
                 model_path=self.prediction_pipeline_config.model_file_path,
             )
