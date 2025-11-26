@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 from mypy_boto3_s3.service_resource import Bucket
 from pandas import DataFrame, read_csv
 
-from src.configuration.aws_connection import S3Client
+from src.config.aws_config import S3Client
 from src.logger import log
 
 
