@@ -368,6 +368,7 @@ dependencies = [
     { name = "kagglehub" },
     { name = "loguru" },
     { name = "matplotlib" },
+    { name = "mypy-boto3-s3" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "pip" },
@@ -394,6 +395,7 @@ requires-dist = [
     { name = "kagglehub", specifier = ">=0.3.13" },
     { name = "loguru" },
     { name = "matplotlib", specifier = ">=3.10.7" },
+    { name = "mypy-boto3-s3", specifier = ">=1.41.1" },
     { name = "numpy", specifier = ">=2.3.4" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pip" },
@@ -408,6 +410,15 @@ requires-dist = [
     { name = "structlog", specifier = ">=25.5.0" },
     { name = "tqdm" },
     { name = "typer" },
+]
+
+[[package]]
+name = "mypy-boto3-s3"
+version = "1.41.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8e/a1/1710c989c58965f2c21e32ffa955f7c91185704f527b9ecd69e1f6991bbd/mypy_boto3_s3-1.41.1.tar.gz", hash = "sha256:1431bb6af31baffcd17860be19f7bf25586e3312372f433ccfaf0632b1e32097", size = 75836, upload-time = "2025-11-20T20:38:31.821Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/be/a6d6fe53318494719732fe31929acf82590f931c7052e8e0e93688cd8392/mypy_boto3_s3-1.41.1-py3-none-any.whl", hash = "sha256:140e065ed6cbb147f27e5875e174ad81f48492a43e7ea2dd4a1b2eb46919625e", size = 82976, upload-time = "2025-11-20T20:38:30.229Z" },
 ]
 
 [[package]]

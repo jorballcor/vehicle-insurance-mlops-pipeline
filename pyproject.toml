@@ -24,6 +24,7 @@ dependencies = [
     "kagglehub>=0.3.13",
     "loguru",
     "matplotlib>=3.10.7",
+    "mypy-boto3-s3>=1.41.1",
     "numpy>=2.3.4",
     "pandas>=2.3.3",
     "pip",
