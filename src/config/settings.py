@@ -91,7 +91,7 @@ class ModelTrainerSettings(BaseModel):
     dir_name: str = "model_trainer"
     trained_model_dir: str = "trained_model"
     trained_model_name: str = "model.pkl"
-    expected_accuracy: confloat(ge=0, le=1) = 0.60
+    expected_score: confloat(ge=0, le=1) = 0.60
     model_config_file_path: Path = Path("config") / "model.yaml"
 
     # Hiperparámetros (parece RandomForest/árboles)
