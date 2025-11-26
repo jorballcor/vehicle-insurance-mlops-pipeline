@@ -4,7 +4,7 @@ from typing import Optional
 import pandas as pd
 from sklearn.metrics import f1_score
 
-from config.settings import get_settings
+from src.config.settings import get_settings
 from src.entities.config_entities import ModelEvaluationConfig
 from src.entities.artifact_entity import (
     ModelTrainerArtifact,

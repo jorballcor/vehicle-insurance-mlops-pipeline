@@ -190,7 +190,11 @@ def build_entities(ts: str | None = None) -> RunEntities:
     # MODEL TRAINER CONFIG
     # --------------------------------------------------------------
     trainer_root = artifact_root / settings.trainer.dir_name
-    trained_model_path = trainer_root / settings.trainer.trained_model_file_name
+    trained_model_path = (
+        trainer_root
+        / settings.trainer.trained_model_dir
+        / settings.trainer.trained_model_name
+    )
 
     model_trainer = ModelTrainerConfig(
         model_trainer_dir=trainer_root,
@@ -211,23 +215,23 @@ def build_entities(ts: str | None = None) -> RunEntities:
     model_evaluation = ModelEvaluationConfig(
         changed_threshold_score=settings.evaluation.changed_threshold_score,
         bucket_name=settings.evaluation.bucket_name,
-        s3_model_key_path=settings.evaluation.s3_model_key_path,
+        s3_model_key_path=settings.evaluation.pusher_s3_key
     )
 
     # --------------------------------------------------------------
     # MODEL PUSHER CONFIG
     # --------------------------------------------------------------
     model_pusher = ModelPusherConfig(
-        bucket_name=settings.pusher.bucket_name,
-        s3_model_key_path=settings.pusher.s3_model_key_path,
+        bucket_name=settings.evaluation.bucket_name,
+        s3_model_key_path=settings.evaluation.pusher_s3_key,
     )
 
     # --------------------------------------------------------------
     # VEHICLE PREDICTOR CONFIG (production inference)
     # --------------------------------------------------------------
     predictor = VehiclePredictorConfig(
-        model_file_path=settings.predictor.model_file_path,
-        model_bucket_name=settings.predictor.model_bucket_name,
+        model_file_path=settings.evaluation.model_file_path,
+        model_bucket_name=settings.evaluation.model_bucket_name,
     )
 
     # --------------------------------------------------------------
