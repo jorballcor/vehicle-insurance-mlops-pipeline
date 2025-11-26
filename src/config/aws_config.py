@@ -38,8 +38,8 @@ class S3Client:
 
         # Initialize only once (singleton-like behavior)
         if S3Client.s3_resource is None or S3Client.s3_client is None:
-            access_key_id = AWS_ACCESS_KEY_ID
-            secret_access_key = AWS_SECRET_ACCESS_KEY
+            access_key_id = os.getenv(AWS_ACCESS_KEY_ID)
+            secret_access_key = os.getenv(AWS_SECRET_ACCESS_KEY)
 
             if not access_key_id:
                 msg = f"Missing AWS environment variable: {AWS_ACCESS_KEY_ID}"
